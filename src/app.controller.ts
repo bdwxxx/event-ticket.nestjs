@@ -14,17 +14,16 @@ export class AppController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('/signup')
-  async signup(@Body() body: { email: string; password: string }) {
-    return this.authService.signUp(body.email, body.password);
+  async signup(@Body() body: { name: string; password: string }) {
+    return this.authService.signUp(body.name, body.password);
   }
 
   @Post('/signin')
-  async singin(@Body() body: { email: string; password: string }) {
-    return this.authService.signIn(body.email, body.password);
+  async singin(@Body() body: { name: string; password: string }) {
+    return this.authService.signIn(body.name, body.password);
   }
 
   @Post('/webhook-check')
-  @HttpCode(200)
   async webhookCheck(@Headers('authorization') authorization: string) {
     if (!authorization) {
       throw new HttpException(
@@ -34,7 +33,7 @@ export class AppController {
     }
 
     const token = authorization.startsWith('Bearer ')
-      ? authorization.substring(7)
+      ? authorization.split(' ')[1]
       : authorization;
 
     await this.authService.webhookCheck(token);

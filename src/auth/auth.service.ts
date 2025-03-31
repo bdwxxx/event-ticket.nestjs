@@ -1,38 +1,40 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { mockUsers } from './mockUsers';
-import { ITokenPayload, IUser } from './auth.interface';
+import { ITokenPayload } from './auth.interface';
+import { Model } from 'mongoose';
+import { User } from 'src/mongo/user.schema';
+import * as bcrypt from 'bcrypt';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class AuthService {
-  private readonly mockUsers = mockUsers; // This should be replaced with a real database in production
-
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @InjectModel(User.name) private readonly userModel: Model<User>,
+  ) {}
 
   async signUp(
     name: string,
     password: string,
   ): Promise<{ access_token: string }> {
-    const userExists = this.mockUsers.find((user) => user.name === name); // In real apps, this should be a database query
+    const userExists = await this.userModel.findOne({ name });
 
     if (userExists) {
-      // for future use
-      throw new Error('User already exists');
+      throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
 
-    const newUser: IUser = {
-      id: this.mockUsers.length + 1,
-      name,
-      password_hash: password, // In a real app, this would be hashed
-      role: 'user',
-    };
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    this.mockUsers.push(newUser); // In a real app, this would be a database operation
+    const createUser = await this.userModel.create({
+      name: name,
+      password_hash: passwordHash,
+      role: 'user',
+    });
 
     const payload: ITokenPayload = {
-      name: newUser.name,
-      sub: newUser.id,
-      role: newUser.role,
+      name: createUser.name,
+      sub: createUser._id?.toString(),
+      role: createUser.role,
     };
 
     const access_token = this.jwtService.sign(payload, {
@@ -47,18 +49,21 @@ export class AuthService {
     name: string,
     password: string,
   ): Promise<{ access_token: string }> {
-    const user = this.mockUsers.find(
-      (user) => user.name === name && user.password_hash === password,
-    ); // In a real app, this should be a database query
+    const user = await this.userModel.findOne({ name });
 
     if (!user) {
-      // for future use
+      throw new Error('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
       throw new Error('Invalid credentials');
     }
 
     const payload: ITokenPayload = {
       name: user.name,
-      sub: user.id,
+      sub: user._id?.toString(),
       role: user.role,
     };
 
@@ -80,7 +85,7 @@ export class AuthService {
         secret: process.env.JWT_SECRET,
       });
 
-      if (!decodedToken || !decodedToken.sub || !decodedToken.name) {
+      if (!decodedToken || !decodedToken.name) {
         throw new HttpException(
           'Invalid token payload',
           HttpStatus.UNAUTHORIZED,
