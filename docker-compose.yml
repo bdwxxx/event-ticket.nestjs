@@ -5,6 +5,8 @@ services:
     build:
       context: . # change after add more services
       dockerfile: Dockerfile
+      args:
+        - PORT=3000
     container_name: auth-service
     ports:
       - "3000:3000"
