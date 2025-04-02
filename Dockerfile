@@ -19,8 +19,6 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-ARG PORT=3000
-
 # Copy package files and install only production dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -32,7 +30,7 @@ COPY --from=build /app/.env .
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=${PORT}
+ENV PORT=$PORT
 ENV TZ=UTC
 
 # Expose the application port
