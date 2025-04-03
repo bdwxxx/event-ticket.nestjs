@@ -10,7 +10,7 @@ import {
 import { AuthService } from './auth/auth.service';
 
 @Controller()
-export class AppController {
+export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('/signup')
