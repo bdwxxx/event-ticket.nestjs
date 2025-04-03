@@ -33,7 +33,10 @@ export class AuthController {
     }
 
     const token = authorization.startsWith('Bearer ')
-      ? authorization.split(' ')[1]
+      ? (authorization.split(' ').at(1) ??
+        (() => {
+          throw new Error('Invalid authorization token format');
+        })())
       : authorization;
 
     await this.authService.webhookCheck(token);

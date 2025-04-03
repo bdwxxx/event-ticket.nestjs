@@ -75,10 +75,6 @@ export class AuthService {
 
   async webhookCheck(token: string): Promise<{ statusCode: number }> {
     try {
-      if (!token) {
-        throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
-      }
-
       const decodedToken = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
       });
