@@ -6,10 +6,11 @@ import {
   HttpException,
   HttpStatus,
   HttpCode,
+  Get
 } from '@nestjs/common';
 import { AuthService } from './auth/auth.service';
 
-@Controller()
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -23,7 +24,7 @@ export class AuthController {
     return this.authService.signIn(body.name, body.password);
   }
 
-  @Post('/webhook-check')
+  @Get('/webhook-check')
   async webhookCheck(@Headers('authorization') authorization: string) {
     if (!authorization) {
       throw new HttpException(
