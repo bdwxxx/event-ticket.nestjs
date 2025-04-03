@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ITokenPayload } from './auth.interface';
 import { Model } from 'mongoose';
-import { User } from 'src/mongo/user.schema';
+import { User } from '../mongo/user.schema';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 
@@ -16,7 +16,7 @@ export class AuthService {
   async signUp(
     name: string,
     password: string,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ accessToken: string }> {
     const userExists = await this.userModel.findOne({ name });
 
     if (userExists) {
@@ -37,18 +37,18 @@ export class AuthService {
       role: createUser.role,
     };
 
-    const access_token = this.jwtService.sign(payload, {
+    const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: process.env.JWT_EXPIRATION || '1h',
     });
 
-    return { access_token };
+    return { accessToken };
   }
 
   async signIn(
     name: string,
     password: string,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ accessToken: string }> {
     const user = await this.userModel.findOne({ name });
 
     if (!user) {
@@ -67,12 +67,12 @@ export class AuthService {
       role: user.role,
     };
 
-    const access_token = this.jwtService.sign(payload, {
+    const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
       expiresIn: process.env.JWT_EXPIRATION || '1h',
     });
 
-    return { access_token };
+    return { accessToken };
   }
 
   async webhookCheck(token: string): Promise<{ statusCode: number }> {
