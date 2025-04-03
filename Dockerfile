@@ -34,7 +34,7 @@ ENV PORT=$PORT
 ENV TZ=UTC
 
 # Expose the application port
-EXPOSE 3000
+EXPOSE $PORT
 
 # Start the application
 CMD ["node", "dist/main"]
