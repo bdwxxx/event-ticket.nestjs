@@ -3,10 +3,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from 'src/mongo/user.schema';
+import { User, UserSchema } from 'src/users/user.schema';
+import { UserRepository } from 'src/users/user.repository';
+import { UserModule } from 'src/users/user.module';
 
 @Module({
   imports: [
+    UserModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

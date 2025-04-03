@@ -1,23 +1,21 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ITokenPayload } from './auth.interface';
-import { Model } from 'mongoose';
-import { User } from '../mongo/user.schema';
 import * as bcrypt from 'bcrypt';
-import { InjectModel } from '@nestjs/mongoose';
+import { UserRepository } from 'src/users/user.repository';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    @InjectModel(User.name) private readonly userModel: Model<User>,
+    private readonly userRepository: UserRepository,
   ) {}
 
   async signUp(
     name: string,
     password: string,
   ): Promise<{ accessToken: string }> {
-    const userExists = await this.userModel.findOne({ name });
+    const userExists = await this.userRepository.findOne({ name });
 
     if (userExists) {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
@@ -25,7 +23,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const createUser = await this.userModel.create({
+    const createUser = await this.userRepository.create({
       name: name,
       password_hash: passwordHash,
       role: 'user',
@@ -49,7 +47,7 @@ export class AuthService {
     name: string,
     password: string,
   ): Promise<{ accessToken: string }> {
-    const user = await this.userModel.findOne({ name });
+    const user = await this.userRepository.findOne({ name });
 
     if (!user) {
       throw new Error('Invalid credentials');
