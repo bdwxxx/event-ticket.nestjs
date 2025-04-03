@@ -3,12 +3,14 @@ import { JwtService } from '@nestjs/jwt';
 import { ITokenPayload } from './auth.interface';
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from 'src/users/user.repository';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userRepository: UserRepository,
+    private readonly configService: ConfigService,
   ) {}
 
   async signUp(
@@ -36,8 +38,8 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRATION || '1h',
+      secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_EXPIRATION', '1h'),
     });
 
     return { accessToken };
@@ -66,8 +68,8 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRATION || '1h',
+      secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_EXPIRATION', '1h'),
     });
 
     return { accessToken };
@@ -76,7 +78,7 @@ export class AuthService {
   async webhookCheck(token: string): Promise<{ statusCode: number }> {
     try {
       const decodedToken = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET,
+        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
       });
 
       if (!decodedToken || !decodedToken.name) {
