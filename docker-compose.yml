@@ -1,6 +1,37 @@
 version: '3.8'
 
 services:
+  test-service:
+    image: nginx:alpine
+    container_name: test-service
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.test.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.test.middlewares=auth-forward"
+      - "traefik.http.services.test.loadbalancer.server.port=80"
+    networks:
+      - app-network
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"  # dashboard
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"  # dashboard port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-network
+
   auth-service:
     build:
       context: . # change after add more services
@@ -11,12 +42,20 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - PORT=3000
       - NODE_ENV=production
       - MONGODB_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/auth-service?authSource=admin
       - MONGO_USER=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.auth-forward.forwardauth.address=http://auth-service:3000/auth/webhook-check"
+      - "traefik.http.middlewares.auth-forward.forwardauth.authResponseHeaders=Authorization"
+      - "traefik.http.routers.auth.rule=Host(`localhost`) && PathPrefix(`/auth`)"
+      - "traefik.http.routers.auth.entrypoints=web"
+      - "traefik.http.services.auth.loadbalancer.server.port=3000"
     depends_on:
       mongodb:
         condition: service_healthy
