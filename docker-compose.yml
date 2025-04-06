@@ -1,34 +1,4 @@
 services:
-  events-service:
-    build:
-      context: . # change after add more services
-      dockerfile: Dockerfile
-      args:
-        - PORT=3001
-        - SERVICE=events
-    container_name: events-service
-    ports:
-      - "3001:3001"
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.insecure=true"  # dashboard
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8080:8080"  # dashboard port
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - app-network
-
   auth-service:
     build:
       context: . # change after add more services
@@ -60,6 +30,41 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+  events-service:
+    build:
+      context: . # change after add more services
+      dockerfile: Dockerfile
+      args:
+        - PORT=3001
+        - SERVICE=events
+    container_name: events-service
+    ports:
+      - "3001:3001"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.events.rule=Host(`localhost`) && PathPrefix(`/events`)
+      - traefik.http.routers.events.entrypoints=web
+      - traefik.http.services.events.loadbalancer.server.port=3001
+      - traefik.http.routers.events.middlewares=auth-forward@docker
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"  # dashboard
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"  # dashboard port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-network
 
   mongodb:
     image: mongo:latest

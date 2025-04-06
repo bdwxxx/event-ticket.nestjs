@@ -42,6 +42,8 @@ export class AuthController {
 
     await this.authService.webhookCheck(token);
 
+    console.log('Webhook check passed');
+
     return;
   }
 }
