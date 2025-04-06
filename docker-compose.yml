@@ -1,20 +1,17 @@
-version: '3.8'
-
 services:
-  test-service:
-    image: nginx:alpine
-    container_name: test-service
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/html:/usr/share/nginx/html:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.test.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.test.middlewares=auth-forward"
-      - "traefik.http.services.test.loadbalancer.server.port=80"
+  events-service:
+    build:
+      context: . # change after add more services
+      dockerfile: Dockerfile
+      args:
+        - PORT=3001
+        - SERVICE=events
+    container_name: events-service
+    ports:
+      - "3001:3001"
     networks:
       - app-network
+    restart: unless-stopped
 
   traefik:
     image: traefik:v2.10
@@ -38,6 +35,7 @@ services:
       dockerfile: Dockerfile
       args:
         - PORT=3000
+        - SERVICE=auth
     container_name: auth-service
     ports:
       - "3000:3000"

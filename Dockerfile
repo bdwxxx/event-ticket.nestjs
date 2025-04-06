@@ -3,38 +3,49 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Аргумент для выбора сервиса
+ARG SERVICE
+
+# Копируем корневые файлы
 COPY package*.json ./
+COPY nest-cli.json ./
+COPY tsconfig*.json ./
+# Copy .env file if it exists
+COPY .env* ./
 RUN npm ci
 
-# Copy source code and configs
-COPY . .
-COPY .env .
+# Копируем все приложения и их конфигурации
+COPY apps/ ./apps/
 
-# Build the application
-RUN npm run build
+# Собираем конкретный сервис 
+# Важно: используем корректную команду для моно-репозитория
+RUN npm run build -- ${SERVICE}
 
 # Production Stage
 FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Copy package files and install only production dependencies
-COPY package*.json ./
+ARG SERVICE
+
+# Копируем скомпилированный код
+COPY --from=build /app/dist/apps/${SERVICE} ./dist/apps/${SERVICE}
+COPY --from=build /app/package*.json ./
+# Use a conditional copy for the .env file
+COPY --from=build /app/.env ./
+
+# Устанавливаем только production зависимости
 RUN npm ci --omit=dev
 
-# Copy built application and configs from build stage
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/.env .
-
-# Set environment variables
+# Устанавливаем переменные окружения
 ENV NODE_ENV=production
-ENV PORT=$PORT
+ARG PORT=3000
+ENV PORT=${PORT}
 ENV TZ=UTC
+ENV APP_SERVICE=${SERVICE}
 
-# Expose the application port
-EXPOSE $PORT
+# Открываем порт
+EXPOSE ${PORT}
 
-# Start the application
-CMD ["node", "dist/main"]
+# Запускаем приложение с правильным путем
+CMD node dist/apps/${APP_SERVICE}/main.js
