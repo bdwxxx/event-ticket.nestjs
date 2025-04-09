@@ -1,8 +1,32 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/teach-project/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/teach-project/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/teach-project",
+  "projects": {
+    "events": {
+      "type": "application",
+      "root": "apps/events",
+      "entryFile": "main",
+      "sourceRoot": "apps/events/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/events/tsconfig.app.json"
+      }
+    },
+    "teach-project": {
+      "type": "application",
+      "root": "apps/teach-project",
+      "entryFile": "main",
+      "sourceRoot": "apps/teach-project/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/teach-project/tsconfig.app.json"
+      }
+    }
   }
 }
