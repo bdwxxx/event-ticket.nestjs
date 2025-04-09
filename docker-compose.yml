@@ -1,11 +1,8 @@
 services:
   auth-service:
     build:
-      context: . # change after add more services
+      context: ./apps/auth
       dockerfile: Dockerfile
-      args:
-        - PORT=3000
-        - SERVICE=auth
     container_name: auth-service
     ports:
       - "3000:3000"
@@ -30,16 +27,17 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+
   events-service:
     build:
-      context: . # change after add more services
+      context: ./apps/events
       dockerfile: Dockerfile
-      args:
-        - PORT=3001
-        - SERVICE=events
     container_name: events-service
     ports:
       - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
     labels:
       - traefik.enable=true
       - traefik.http.routers.events.rule=Host(`localhost`) && PathPrefix(`/events`)
