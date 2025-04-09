@@ -20,7 +20,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.middlewares.auth-forward.forwardauth.address=http://auth-service:3000/auth/webhook-check"
-      - "traefik.http.middlewares.auth-forward.forwardauth.authResponseHeaders=Authorization"
+      - "traefik.http.middlewares.auth-forward.forwardauth.authResponseHeaders=Authorization,X-USER-ROLE"
       - "traefik.http.routers.auth.rule=Host(`localhost`) && PathPrefix(`/auth`)"
       - "traefik.http.routers.auth.entrypoints=web"
       - "traefik.http.services.auth.loadbalancer.server.port=3000"

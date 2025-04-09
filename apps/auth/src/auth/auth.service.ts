@@ -75,7 +75,7 @@ export class AuthService {
     return { accessToken };
   }
 
-  async webhookCheck(token: string): Promise<{ statusCode: number }> {
+  async webhookCheck(token: string): Promise<{ statusCode: number; role: string }> {
     try {
       const decodedToken = await this.jwtService.verifyAsync(token, {
         secret: this.configService.getOrThrow<string>('JWT_SECRET'),
@@ -90,6 +90,7 @@ export class AuthService {
 
       return {
         statusCode: HttpStatus.OK,
+        role: decodedToken.role || 'user',
       };
     } catch (error) {
       if (error instanceof HttpException) {
