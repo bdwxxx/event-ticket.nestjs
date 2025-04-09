@@ -3,6 +3,7 @@ import { EventsService } from './events.service';
 import { GetEventsDto } from './dto/get-events.dto';
 import { Roles } from './guards/roles.decorator';
 import { Role } from './guards/role.enum';
+import { Event } from './db/entities/events.entity';
 
 @Controller('events')
 export class EventsController {
@@ -10,7 +11,7 @@ export class EventsController {
 
   @Post()
   @Roles(Role.ADMIN)
-  createEvent(@Body() eventData: any) {
+  createEvent(@Body() eventData: Partial<Event>) {
     return this.eventsService.createEvent(eventData);
   }
 
@@ -35,6 +36,6 @@ export class EventsController {
   @Get()
   @Roles(Role.USER, Role.ADMIN)
   getEvents(@Query() query: GetEventsDto) {
-    return this.eventsService.getEvents(query); 
+    return this.eventsService.getEvents(query);
   }
 }

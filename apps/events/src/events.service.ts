@@ -2,16 +2,25 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventsRepositoryService } from './events-repository/events-repositories.service';
 import { GetEventsDto } from './dto/get-events.dto';
 import { Event } from './db/entities/events.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly eventsRepository: EventsRepositoryService) {}
+  constructor(
+    private readonly eventsRepository: EventsRepositoryService,
+    @InjectRepository(Event)
+    private readonly eventRepo: Repository<Event>,
+  ) {}
 
   async createEvent(eventData: Partial<Event> = {}): Promise<Event> {
     return this.eventsRepository.create(eventData);
   }
 
-  async updateEvent(id: string, eventData: Partial<Event> = {}): Promise<Event> {
+  async updateEvent(
+    id: string,
+    eventData: Partial<Event> = {},
+  ): Promise<Event> {
     const updatedEvent = await this.eventsRepository.update(id, eventData);
     if (!updatedEvent) {
       throw new NotFoundException(`Event with ID ${id} not found`);
@@ -36,29 +45,35 @@ export class EventsService {
   }
 
   async getEvents(query: GetEventsDto): Promise<Event[]> {
-    // Build filter conditions based on query params
-    const filter: Record<string, any> = {};
+    const qb = this.eventRepo.createQueryBuilder('event');
     
     if (query.dateFrom || query.dateTo) {
-      filter.date = {};
       if (query.dateFrom) {
-        filter.date.$gte = new Date(query.dateFrom);
+        qb.andWhere('event.eventDate >= :dateFrom', {
+          dateFrom: new Date(query.dateFrom),
+        });
       }
       if (query.dateTo) {
-        filter.date.$lte = new Date(query.dateTo);
+        qb.andWhere('event.eventDate <= :dateTo', {
+          dateTo: new Date(query.dateTo),
+        });
       }
     }
 
     if (query.bite) {
-      filter.bite = query.bite;
+      qb.andWhere('event.name LIKE :bite', { bite: `%${query.bite}%` });
     }
 
     if (query.ms_count) {
-      filter.ms_count = query.ms_count;
+      qb.take(query.ms_count);
     }
 
-    // Implement pagination and filtering logic here
-    // This is a placeholder - you'll need to extend the repository to support filtering
-    return []; // Replace with actual implementation
+    if (query.page) {
+      const take = query.ms_count || 10;
+      const skip = (query.page - 1) * take;
+      qb.skip(skip).take(take);
+    }
+
+    return await qb.getMany();
   }
 }
