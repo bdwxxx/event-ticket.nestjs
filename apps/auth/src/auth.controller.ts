@@ -6,9 +6,11 @@ import {
   HttpException,
   HttpStatus,
   HttpCode,
-  Get
+  Get,
+  Res
 } from '@nestjs/common';
 import { AuthService } from './auth/auth.service';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -25,7 +27,10 @@ export class AuthController {
   }
 
   @Get('/webhook-check')
-  async webhookCheck(@Headers('authorization') authorization: string) {
+  async webhookCheck(
+    @Headers('authorization') authorization: string,
+    @Res() response: Response,
+  ) {
     if (!authorization) {
       throw new HttpException(
         'Authorization header is required',
@@ -40,8 +45,10 @@ export class AuthController {
         })())
       : authorization;
 
-    await this.authService.webhookCheck(token);
-
-    return;
+    const result = await this.authService.webhookCheck(token);
+    
+    // Add the X-USER-ROLE header to the response
+    response.setHeader('X-USER-ROLE', result.role);
+    response.status(HttpStatus.OK).send();
   }
 }
