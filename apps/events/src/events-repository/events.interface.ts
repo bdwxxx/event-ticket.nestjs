@@ -1,4 +1,4 @@
-import { Event } from "../db/entities/events.entity";
+import { Event } from '../db/entities/events.entity';
 
 export interface IEventRepository {
   create(EventData: Partial<Event>): Promise<Event>;
