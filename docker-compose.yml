@@ -60,11 +60,11 @@ services:
     environment:
       - PORT=3002
       - NODE_ENV=production
-      - POSTGRES_HOST=orders-postgres
+      - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=orders_db
+      - POSTGRES_DB=${POSTGRES_DB}
     labels:
       - traefik.enable=true
       - traefik.http.routers.orders.rule=Host(`localhost`) && PathPrefix(`/orders`)
@@ -137,11 +137,11 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=orders_db
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - orders_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d orders_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
