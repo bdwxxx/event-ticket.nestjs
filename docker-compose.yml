@@ -52,6 +52,32 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  orders-service:
+    build:
+      context: ./apps/orders
+      dockerfile: Dockerfile
+    container_name: orders-service
+    environment:
+      - PORT=3002
+      - NODE_ENV=production
+      - POSTGRES_HOST=orders-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=orders_db
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.orders.rule=Host(`localhost`) && PathPrefix(`/orders`)
+      - traefik.http.routers.orders.entrypoints=web
+      - traefik.http.services.orders.loadbalancer.server.port=3002
+      - traefik.http.routers.orders.middlewares=auth-forward@docker
+    networks:
+      - app-network
+    depends_on:
+      orders-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   traefik:
     image: traefik:v2.10
     container_name: traefik
@@ -105,6 +131,24 @@ services:
       - app-network
     restart: unless-stopped
     
+  orders-postgres:
+    image: postgres:latest
+    container_name: orders-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=orders_db
+    volumes:
+      - orders_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    restart: unless-stopped
+    
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -129,4 +173,5 @@ networks:
 volumes:
   mongodb_data:
   postgres_data:
+  orders_postgres_data:
   rabbitmq_data:
