@@ -10,6 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { EventsRepositoryService } from './events-repository/events-repositories.service';
+import { RabbitMQModule } from './rmq/rmq.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EventsRepositoryService } from './events-repository/events-repositories
     }),
     TypeOrmModule.forFeature([Event]),
     EventsRepositoryModule,
+    RabbitMQModule,
   ],
   controllers: [EventsController],
   providers: [
