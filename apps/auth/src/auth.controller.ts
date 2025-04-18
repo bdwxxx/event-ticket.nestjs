@@ -46,9 +46,9 @@ export class AuthController {
       : authorization;
 
     const result = await this.authService.webhookCheck(token);
-    
-    // Add the X-USER-ROLE header to the response
+        
     response.setHeader('X-USER-ROLE', result.role);
+    response.setHeader('X-USER-ID', result.userId);
     response.status(HttpStatus.OK).send();
   }
 }
