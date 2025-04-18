@@ -95,18 +95,6 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * @deprecated Use sendToQueue instead. This method will be removed in a future version.
-   */
-  async publishEvent(
-    exchange: string,
-    routingKey: string,
-    message: any,
-  ): Promise<void> {
-    this.logger.warn('publishEvent is deprecated, use sendToQueue instead');
-    return this.sendToQueue(routingKey, message);
-  }
-
   async closeConnection(): Promise<void> {
     try {
       if (this.channel) {

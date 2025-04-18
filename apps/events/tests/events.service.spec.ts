@@ -71,7 +71,7 @@ describe('EventsService', () => {
       const result = await service.createEvent(mockEvent);
       
       expect(eventsRepository.create).toHaveBeenCalledWith(mockEvent);
-      expect(rmqService.publishEvent).toHaveBeenCalled();
+      expect(rmqService.sendToQueue).toHaveBeenCalled();
       expect(result).toEqual(mockEvent);
     });
   });
@@ -116,7 +116,7 @@ describe('EventsService', () => {
       
       expect(eventsRepository.findById).toHaveBeenCalledWith('1');
       expect(eventsRepository.delete).toHaveBeenCalledWith('1');
-      expect(rmqService.publishEvent).toHaveBeenCalled();
+      expect(rmqService.sendToQueue).toHaveBeenCalled();
       expect(result).toBe(true);
     });
   });

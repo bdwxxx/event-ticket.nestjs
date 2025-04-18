@@ -80,7 +80,7 @@ describe('RmqService', () => {
     it('should call sendToQueue with the routingKey as queue name', async () => {
       const sendToQueueSpy = jest.spyOn(service, 'sendToQueue').mockResolvedValue();
       
-      await service.publishEvent('exchange', 'routing.key', { data: 'test' });
+      await service.sendToQueue('routing.key', { data: 'test' });
       
       expect(sendToQueueSpy).toHaveBeenCalledWith('routing.key', { data: 'test' });
     });

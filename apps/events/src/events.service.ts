@@ -18,8 +18,7 @@ export class EventsService {
   async createEvent(eventData: Partial<Event> = {}): Promise<Event> {
     const newEvent = await this.eventsRepository.create(eventData);
     
-    await this.rmqService.publishEvent(
-      'events',
+    await this.rmqService.sendToQueue(
       'event.created',
       {
         id: newEvent.id,
@@ -52,8 +51,7 @@ export class EventsService {
       eventData.ticketPrice !== undefined && 
       originalEvent.ticketPrice !== eventData.ticketPrice
     ) {
-      await this.rmqService.publishEvent(
-        'events',
+      await this.rmqService.sendToQueue(
         'event.price.changed',
         {
           id: updatedEvent.id,
@@ -67,8 +65,7 @@ export class EventsService {
       eventData.availableTickets !== undefined && 
       originalEvent.availableTickets !== eventData.availableTickets
     ) {
-      await this.rmqService.publishEvent(
-        'events',
+      await this.rmqService.sendToQueue(
         'event.tickets.changed',
         {
           id: updatedEvent.id,
@@ -93,8 +90,7 @@ export class EventsService {
       throw new BadRequestException(`Failed to delete event with ID ${id}`);
     }
     
-    await this.rmqService.publishEvent(
-      'events',
+    await this.rmqService.sendToQueue(
       'event.deleted',
       { id: parseInt(id) },
     );
