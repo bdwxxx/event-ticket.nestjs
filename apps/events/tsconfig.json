@@ -19,6 +19,6 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {}
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }
