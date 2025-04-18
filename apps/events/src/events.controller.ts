@@ -4,6 +4,8 @@ import { GetEventsDto } from './dto/get-events.dto';
 import { Roles } from './guards/roles.decorator';
 import { Role } from './guards/role.enum';
 import { Event } from './db/entities/events.entity';
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @Controller('events')
 export class EventsController {
@@ -11,20 +13,21 @@ export class EventsController {
 
   @Post()
   @Roles(Role.ADMIN)
-  createEvent(@Body() eventData: Partial<Event>) {
+  createEvent(@Body() eventData: CreateEventDto) {
     return this.eventsService.createEvent(eventData);
   }
 
   @Put(':id')
   @Roles(Role.ADMIN)
-  updateEvent(@Param('id') id: string, @Body() eventData: any) {
+  updateEvent(@Param('id') id: string, @Body() eventData: UpdateEventDto) {
     return this.eventsService.updateEvent(id, eventData);
   }
 
   @Delete(':id')
   @Roles(Role.ADMIN)
-  deleteEvent(@Param('id') id: string) {
-    return this.eventsService.deleteEvent(id);
+  async deleteEvent(@Param('id') id: string): Promise<{ success: boolean }> {
+    const result = await this.eventsService.deleteEvent(id);
+    return { success: result };
   }
 
   @Get(':id')
