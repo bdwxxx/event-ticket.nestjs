@@ -1,16 +1,21 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import * as amqp from 'amqplib';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RabbitMQService.name);
-  private connection: amqp.Connection
-  private channel: amqp.Channel 
+  private connection: amqp.Connection;
+  private channel: amqp.Channel;
   private readonly queue: string = 'my_queue';
 
   constructor(private readonly configService: ConfigService) {}
-  
+
   async onModuleInit() {
     await this.connect();
   }
@@ -69,7 +74,9 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     try {
       const msgBuffer = Buffer.from(JSON.stringify(message));
       this.channel.sendToQueue(this.queue, msgBuffer, { persistent: true });
-      this.logger.log(`Message sent to queue ${this.queue}: ${JSON.stringify(message)}`);
+      this.logger.log(
+        `Message sent to queue ${this.queue}: ${JSON.stringify(message)}`,
+      );
     } catch (error) {
       this.logger.error(`Failed to send message: ${error.message}`);
       throw error;
@@ -88,10 +95,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
           if (msg) {
             try {
               await callback(msg);
-              this.channel!.ack(msg);
+              this.channel.ack(msg);
             } catch (error) {
               this.logger.error(`Error processing message: ${error.message}`);
-              this.channel!.nack(msg, false, true);
+              this.channel.nack(msg, false, true);
             }
           }
         },

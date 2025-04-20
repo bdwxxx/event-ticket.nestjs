@@ -46,7 +46,7 @@ export class EventsService {
 
   async getEvents(query: GetEventsDto): Promise<Event[]> {
     const qb = this.eventRepo.createQueryBuilder('event');
-    
+
     if (query.dateFrom || query.dateTo) {
       if (query.dateFrom) {
         qb.andWhere('event.eventDate >= :dateFrom', {

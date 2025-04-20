@@ -1,4 +1,13 @@
-import { Controller, Delete, Get, Post, Put, Query, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Put,
+  Query,
+  Param,
+  Body,
+} from '@nestjs/common';
 import { EventsService } from './events.service';
 import { GetEventsDto } from './dto/get-events.dto';
 import { Roles } from './guards/roles.decorator';
