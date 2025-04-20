@@ -9,7 +9,7 @@ export class Ticket {
     id: number;
 
     @Column()
-    eventId: number;
+    event_id: number;
 
     @Column()
     price: number;
