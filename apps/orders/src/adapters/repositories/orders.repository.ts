@@ -142,6 +142,14 @@ export class OrdersRepository {
         return order;
     }
 
+    async findAll(): Promise<Order[]> {
+        const orders = await this.orderRepository.find({ relations: ['tickets'] });
+        if (!orders || orders.length === 0) {
+            throw new NotFoundException('No orders found');
+        }
+        return orders;
+    }
+
     async findCurrentCart(userId: number): Promise<Order> {
         const order = await this.orderRepository.findOne({
             where: { user_id: userId, order_status: 'cart' },

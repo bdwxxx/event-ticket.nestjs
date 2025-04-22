@@ -22,7 +22,7 @@ export class OrdersController {
     return this.ordersRepository.addTicketToOrder(orderId, eventId, price);
   }
 
-  @Delete()
+  @Delete(':id')
   async deleteOrder(@Param('id') id: number) {
     return this.ordersRepository.delete(id);
   }
@@ -31,4 +31,39 @@ export class OrdersController {
   async getOrder(@Param('id') id: number) {
     return this.ordersRepository.findOne(id);
   }
+
+  @Get()
+  async getAllOrders() {
+    return this.ordersRepository.findAll();
+  }
+
+  @Get('current')
+  async getCurrentOrder(@Headers('X_USER_ID') userId: number) {
+    return this.ordersRepository.findCurrentCart(userId);
+  }  
+
+  @Post(':id/checkout')
+  async checkoutOrder(
+    @Param('id') orderId: number,
+    @Headers('X_USER_ID') userId: number
+    ) {
+    return this.ordersRepository.checkout(orderId);
+  }
+
+  @Post(':id/refund')
+  async requestRefund(
+    @Param('id') orderId: number,
+    @Headers('X_USER_ID') userId: number
+    ) {
+    return this.ordersRepository.requestRefund(orderId);
+  }
+
+  @Delete(':id/ticket/:ticketId')
+  async removeTicketFromOrder(
+    @Param('id') orderId: number,
+    @Param('ticketId') ticketId: number,
+  ) {
+    return this.ordersRepository.removeTicketFromOrder(orderId, ticketId);
+  }
+
 }
