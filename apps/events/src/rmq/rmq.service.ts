@@ -8,11 +8,10 @@ import * as amqp from 'amqplib';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RabbitMQService.name);
-  private connection: amqp.Connection;
-  private channel: amqp.Channel;
-  private readonly queue: string = 'my_queue';
+export class RmqService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RmqService.name);
+  protected connection: amqp.Connection | null = null;
+  protected channel: amqp.Channel | null = null;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -21,17 +20,17 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    await this.close();
+    await this.closeConnection();
   }
 
-  private async connect() {
+  async connect(): Promise<void> {
     try {
-      const amqpUrl = this.configService.get<string>('RABBITMQ_URL');
-      if (!amqpUrl) {
+      const rabbitmqUrl = this.configService.get<string>('RABBITMQ_URL');
+      if (!rabbitmqUrl) {
         throw new Error('RABBITMQ_URL is not defined in the configuration');
       }
-      this.logger.log(`Connecting to RabbitMQ at ${amqpUrl}`);
-      this.connection = await amqp.connect(amqpUrl);
+      this.logger.log(`Connecting to RabbitMQ at ${rabbitmqUrl}`);
+      this.connection = await amqp.connect(rabbitmqUrl);
       if (!this.connection) {
         throw new Error('Failed to establish connection');
       }
@@ -40,8 +39,6 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       if (!this.channel) {
         throw new Error('Failed to create channel');
       }
-
-      await this.channel.assertQueue(this.queue, { durable: true });
 
       this.connection.on('error', (err) => {
         this.logger.error(`Connection error: ${err.message}`);
@@ -66,52 +63,44 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     await this.connect();
   }
 
-  async sendToQueue(message: any) {
-    if (!this.channel) {
-      throw new Error('Channel not initialized');
-    }
-
+  async sendToQueue(
+    queue: string,
+    message: any,
+  ): Promise<void> {
     try {
-      const msgBuffer = Buffer.from(JSON.stringify(message));
-      this.channel.sendToQueue(this.queue, msgBuffer, { persistent: true });
-      this.logger.log(
-        `Message sent to queue ${this.queue}: ${JSON.stringify(message)}`,
+      if (!this.channel) {
+        await this.connect();
+      }
+
+      // Add a null check after attempting to connect
+      if (!this.channel) {
+        throw new Error('Failed to establish RabbitMQ channel');
+      }
+
+      // Assert the queue exists
+      await this.channel.assertQueue(queue, { durable: true });
+      
+      // Send message to queue
+      this.channel.sendToQueue(
+        queue,
+        Buffer.from(JSON.stringify(message)),
+        { persistent: true },
+      );
+      
+      this.logger.debug(
+        `Message sent to queue: ${queue}`,
+        message,
       );
     } catch (error) {
-      this.logger.error(`Failed to send message: ${error.message}`);
+      this.logger.error(
+        `Failed to send message to queue: ${queue}`,
+        error,
+      );
       throw error;
     }
   }
 
-  async consume(callback: (msg: amqp.ConsumeMessage | null) => Promise<void>) {
-    if (!this.channel) {
-      throw new Error('Channel not initialized');
-    }
-
-    try {
-      await this.channel.consume(
-        this.queue,
-        async (msg) => {
-          if (msg) {
-            try {
-              await callback(msg);
-              this.channel.ack(msg);
-            } catch (error) {
-              this.logger.error(`Error processing message: ${error.message}`);
-              this.channel.nack(msg, false, true);
-            }
-          }
-        },
-        { noAck: false },
-      );
-      this.logger.log(`Started consuming messages from ${this.queue}`);
-    } catch (error) {
-      this.logger.error(`Failed to consume messages: ${error.message}`);
-      throw error;
-    }
-  }
-
-  async close() {
+  async closeConnection(): Promise<void> {
     try {
       if (this.channel) {
         await this.channel.close();
@@ -119,9 +108,9 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       if (this.connection) {
         await this.connection.close();
       }
-      this.logger.log('RabbitMQ connection closed');
+      this.logger.log('Disconnected from RabbitMQ');
     } catch (error) {
-      this.logger.error(`Error closing connection: ${error.message}`);
+      this.logger.error('Error closing RabbitMQ connection', error);
     }
   }
 }
