@@ -1,6 +1,14 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Ticket } from "./ticket.entity";
 
+export enum OrderStatus {
+    CART = 'cart',
+    CREATED = 'created',
+    DONE = 'done',
+    REFUND_PENDING = 'refund_pending',
+    REFUNDED = 'refunded',
+}
+
 @Entity({
     name: 'order',
 })
@@ -10,8 +18,9 @@ export class Order {
 
     @Column({
         type: 'enum',
-        enum: ['cart', 'created', 'done', 'refund_pending', 'refunded'],
-        default: 'cart',
+        enum: OrderStatus,
+        default: OrderStatus.CART,
+        nullable: false,
     })
     order_status: string;
 

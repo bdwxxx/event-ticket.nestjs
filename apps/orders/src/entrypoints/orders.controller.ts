@@ -1,16 +1,17 @@
 import { Body, Controller, Delete, Get, Head, Headers, Param, Post, Put } from '@nestjs/common';
 import { OrdersRepository } from 'src/adapters/repositories/orders.repository';
+import { OrdersService } from 'src/services/orders.service';
 
 
 @Controller('order')
 export class OrdersController {
   constructor(
-    private readonly ordersRepository: OrdersRepository,
+    private readonly orderService: OrdersService,
   ) {}
 
   @Post()
   async createOrder(@Headers('X_USER_ID') userId: number) {
-    return this.ordersRepository.create(userId);
+    return this.orderService.createOrder(userId); 
   }
 
   @Put()
@@ -19,35 +20,34 @@ export class OrdersController {
     @Body('eventId') eventId: number,
     @Body('price') price: number,
   ) {
-    return this.ordersRepository.addTicketToOrder(orderId, eventId, price);
+    return this.orderService.updateOrder(orderId, eventId, price);
   }
 
   @Delete(':id')
-  async deleteOrder(@Param('id') id: number) {
-    return this.ordersRepository.delete(id);
+  async deleteOrder(@Param('id') id: number, @Headers('X_USER_ID') userId: number) {
+    return this.orderService.deleteOrder(id, userId);
   }
 
   @Get(':id')
-  async getOrder(@Param('id') id: number) {
-    return this.ordersRepository.findOne(id);
+  async getOrder(@Param('id') id: number, @Headers('X_USER_ID') userId: number) {
+    return this.orderService.getOrder(id, userId);
   }
 
   @Get()
-  async getAllOrders() {
-    return this.ordersRepository.findAll();
+  async getAllOrders(@Headers('X_USER_ID') userId: number) {
+    return this.orderService.getAllOrders(userId);
   }
 
   @Get('current')
   async getCurrentOrder(@Headers('X_USER_ID') userId: number) {
-    return this.ordersRepository.findCurrentCart(userId);
+    return this.orderService.getCurrentOrder(userId);
   }  
 
   @Post(':id/checkout')
   async checkoutOrder(
     @Param('id') orderId: number,
-    @Headers('X_USER_ID') userId: number
     ) {
-    return this.ordersRepository.checkout(orderId);
+    return this.orderService.checkoutOrder(orderId);
   }
 
   @Post(':id/refund')
@@ -55,7 +55,7 @@ export class OrdersController {
     @Param('id') orderId: number,
     @Headers('X_USER_ID') userId: number
     ) {
-    return this.ordersRepository.requestRefund(orderId);
+    return this.orderService.requestRefund(orderId, userId);
   }
 
   @Delete(':id/ticket/:ticketId')
@@ -63,7 +63,6 @@ export class OrdersController {
     @Param('id') orderId: number,
     @Param('ticketId') ticketId: number,
   ) {
-    return this.ordersRepository.removeTicketFromOrder(orderId, ticketId);
+    return this.orderService.removeTicketFromOrder(orderId, ticketId);
   }
-
 }
