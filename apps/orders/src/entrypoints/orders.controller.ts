@@ -1,17 +1,31 @@
-import { Body, Controller, Delete, Get, Head, Headers, Param, Post, Put } from '@nestjs/common';
-import { OrdersRepository } from 'src/adapters/repositories/orders.repository';
-import { OrdersService } from 'src/services/orders.service';
-
+import { Body, Controller, Delete, Get, Headers, Param, Post, Put } from '@nestjs/common';
+import { CreateOrderUseCase } from '../usecases/create-order.usecase';
+import { GetOrderUseCase } from '../usecases/get-order.usecase';
+import { UpdateOrderUseCase } from '../usecases/update-order.usecase';
+import { DeleteOrderUseCase } from '../usecases/delete-order.usecase';
+import { GetAllOrdersUseCase } from '../usecases/get-all-orders.usecase';
+import { GetCurrentOrderUseCase } from '../usecases/get-current-order.usecase';
+import { CheckoutOrderUseCase } from '../usecases/checkout-order.usecase';
+import { RequestRefundUseCase } from '../usecases/request-refund.usecase';
+import { RemoveTicketUseCase } from '../usecases/remove-ticket.usecase';
 
 @Controller('order')
 export class OrdersController {
   constructor(
-    private readonly orderService: OrdersService,
+    private readonly createOrderUseCase: CreateOrderUseCase,
+    private readonly getOrderUseCase: GetOrderUseCase,
+    private readonly updateOrderUseCase: UpdateOrderUseCase,
+    private readonly deleteOrderUseCase: DeleteOrderUseCase,
+    private readonly getAllOrdersUseCase: GetAllOrdersUseCase,
+    private readonly getCurrentOrderUseCase: GetCurrentOrderUseCase,
+    private readonly checkoutOrderUseCase: CheckoutOrderUseCase,
+    private readonly requestRefundUseCase: RequestRefundUseCase,
+    private readonly removeTicketUseCase: RemoveTicketUseCase
   ) {}
 
   @Post()
   async createOrder(@Headers('X_USER_ID') userId: number) {
-    return this.orderService.createOrder(userId); 
+    return this.createOrderUseCase.execute(userId); 
   }
 
   @Put()
@@ -20,34 +34,34 @@ export class OrdersController {
     @Body('eventId') eventId: number,
     @Body('price') price: number,
   ) {
-    return this.orderService.updateOrder(orderId, eventId, price);
+    return this.updateOrderUseCase.execute(orderId, eventId, price);
   }
 
   @Delete(':id')
   async deleteOrder(@Param('id') id: number, @Headers('X_USER_ID') userId: number) {
-    return this.orderService.deleteOrder(id, userId);
+    return this.deleteOrderUseCase.execute(id, userId);
   }
 
   @Get(':id')
   async getOrder(@Param('id') id: number, @Headers('X_USER_ID') userId: number) {
-    return this.orderService.getOrder(id, userId);
+    return this.getOrderUseCase.execute(id, userId);
   }
 
   @Get()
   async getAllOrders(@Headers('X_USER_ID') userId: number) {
-    return this.orderService.getAllOrders(userId);
+    return this.getAllOrdersUseCase.execute(userId);
   }
 
   @Get('current')
   async getCurrentOrder(@Headers('X_USER_ID') userId: number) {
-    return this.orderService.getCurrentOrder(userId);
+    return this.getCurrentOrderUseCase.execute(userId);
   }  
 
   @Post(':id/checkout')
   async checkoutOrder(
     @Param('id') orderId: number,
     ) {
-    return this.orderService.checkoutOrder(orderId);
+    return this.checkoutOrderUseCase.execute(orderId);
   }
 
   @Post(':id/refund')
@@ -55,7 +69,7 @@ export class OrdersController {
     @Param('id') orderId: number,
     @Headers('X_USER_ID') userId: number
     ) {
-    return this.orderService.requestRefund(orderId, userId);
+    return this.requestRefundUseCase.execute(orderId, userId);
   }
 
   @Delete(':id/ticket/:ticketId')
@@ -63,6 +77,6 @@ export class OrdersController {
     @Param('id') orderId: number,
     @Param('ticketId') ticketId: number,
   ) {
-    return this.orderService.removeTicketFromOrder(orderId, ticketId);
+    return this.removeTicketUseCase.execute(orderId, ticketId);
   }
 }
