@@ -1,26 +1,31 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { OrdersRepository } from "../adapters/repositories/orders.repository";
-import { Order } from "../entitites/order.entity";
+import { Injectable } from '@nestjs/common';
+import { OrdersRepository } from '../adapters/repositories/orders.repository';
+import { OrderNotFoundException, RefundWindowExpiredException } from '../domain/exceptions/order-exceptions';
+import { Order } from '../domain/models/order.models';
+import { OrderMapper } from '../domain/order.mapper';
 
 @Injectable()
 export class RequestRefundUseCase {
-    constructor(
-        private readonly ordersRepository: OrdersRepository
-    ) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly orderMapper: OrderMapper,
+  ) {}
 
-    async execute(orderId: number, userId: number): Promise<Order> {
-        const order = await this.ordersRepository.findOne(orderId, userId);
+  async execute(orderId: number, userId: number): Promise<Order> {
+    const orderEntity = await this.ordersRepository.findOne(orderId, userId);
 
-        if (!order) {
-            throw new NotFoundException('Order not found');
-        }
-
-        const now = new Date();
-        const timeDiff = (now.getTime() - new Date(order.created_at).getTime()) / 1000 / 60; // minute difference
-        if (timeDiff > 20) {
-            throw new BadRequestException('Refund window has expired (20 minutes after payment)');
-        }
-
-        return this.ordersRepository.requestRefund(orderId);
+    if (!orderEntity) {
+      throw new OrderNotFoundException();
     }
+
+    const order = this.orderMapper.toDomain(orderEntity);
+
+    if (!order.canRequestRefund()) {
+      throw new RefundWindowExpiredException();
+    }
+
+    const updatedOrderEntity = await this.ordersRepository.requestRefund(orderId);
+
+    return this.orderMapper.toDomain(updatedOrderEntity);
+  }
 }
