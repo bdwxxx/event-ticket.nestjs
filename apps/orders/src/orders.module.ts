@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { OrdersController } from './controllers/orders.controller';
+import { OrdersController } from './entrypoints/orders.controller';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -17,8 +17,9 @@ import { RequestRefundUseCase } from './usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from './usecases/remove-ticket.usecase';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }),
-  TypeOrmModule.forRootAsync({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

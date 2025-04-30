@@ -7,11 +7,12 @@ import { Order, Ticket } from './models/order.models';
 export class OrderMapper {
   toDomain(orderEntity: OrderEntity): Order {
     const tickets = orderEntity.tickets
-      ? orderEntity.tickets.map((ticketEntity) =>
-          new Ticket({
-            id: ticketEntity.id,
-            order_id: ticketEntity.order?.id ?? orderEntity.id,
-          }),
+      ? orderEntity.tickets.map(
+          (ticketEntity) =>
+            new Ticket({
+              id: ticketEntity.id,
+              order_id: ticketEntity.order?.id ?? orderEntity.id,
+            }),
         )
       : [];
 

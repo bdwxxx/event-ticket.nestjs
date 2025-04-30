@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../adapters/repositories/orders.repository';
-import { OrderNotFoundException, RefundWindowExpiredException } from '../domain/exceptions/order-exceptions';
+import {
+  OrderNotFoundException,
+  RefundWindowExpiredException,
+} from '../domain/exceptions/order-exceptions';
 import { Order } from '../domain/models/order.models';
 import { OrderMapper } from '../domain/order.mapper';
 
@@ -24,7 +27,8 @@ export class RequestRefundUseCase {
       throw new RefundWindowExpiredException();
     }
 
-    const updatedOrderEntity = await this.ordersRepository.requestRefund(orderId);
+    const updatedOrderEntity =
+      await this.ordersRepository.requestRefund(orderId);
 
     return this.orderMapper.toDomain(updatedOrderEntity);
   }

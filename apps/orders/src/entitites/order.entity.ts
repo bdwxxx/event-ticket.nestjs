@@ -1,35 +1,41 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Ticket } from "./ticket.entity";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Ticket } from './ticket.entity';
 
 export enum OrderStatus {
-    CART = 'cart',
-    CREATED = 'created',
-    DONE = 'done',
-    REFUND_PENDING = 'refund_pending',
-    REFUNDED = 'refunded',
+  CART = 'cart',
+  CREATED = 'created',
+  DONE = 'done',
+  REFUND_PENDING = 'refund_pending',
+  REFUNDED = 'refunded',
 }
 
 @Entity({
-    name: 'order',
+  name: 'order',
 })
 export class Order {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({
-        type: 'enum',
-        enum: OrderStatus,
-        default: OrderStatus.CART,
-        nullable: false,
-    })
-    order_status: string;
+  @Column({
+    type: 'enum',
+    enum: OrderStatus,
+    default: OrderStatus.CART,
+    nullable: false,
+  })
+  order_status: string;
 
-    @Column()
-    user_id: number;
+  @Column()
+  user_id: number;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-    @OneToMany(() => Ticket, (ticket) => ticket.order)
-    tickets: Ticket[];
+  @OneToMany(() => Ticket, (ticket) => ticket.order)
+  tickets: Ticket[];
 }

@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Headers, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { CreateOrderUseCase } from '../usecases/create-order.usecase';
 import { GetOrderUseCase } from '../usecases/get-order.usecase';
 import { UpdateOrderUseCase } from '../usecases/update-order.usecase';
@@ -20,12 +29,12 @@ export class OrdersController {
     private readonly getCurrentOrderUseCase: GetCurrentOrderUseCase,
     private readonly checkoutOrderUseCase: CheckoutOrderUseCase,
     private readonly requestRefundUseCase: RequestRefundUseCase,
-    private readonly removeTicketUseCase: RemoveTicketUseCase
+    private readonly removeTicketUseCase: RemoveTicketUseCase,
   ) {}
 
   @Post()
   async createOrder(@Headers('X_USER_ID') userId: number) {
-    return this.createOrderUseCase.execute(userId); 
+    return this.createOrderUseCase.execute(userId);
   }
 
   @Put()
@@ -38,12 +47,18 @@ export class OrdersController {
   }
 
   @Delete(':id')
-  async deleteOrder(@Param('id') id: number, @Headers('X_USER_ID') userId: number) {
+  async deleteOrder(
+    @Param('id') id: number,
+    @Headers('X_USER_ID') userId: number,
+  ) {
     return this.deleteOrderUseCase.execute(id, userId);
   }
 
   @Get(':id')
-  async getOrder(@Param('id') id: number, @Headers('X_USER_ID') userId: number) {
+  async getOrder(
+    @Param('id') id: number,
+    @Headers('X_USER_ID') userId: number,
+  ) {
     return this.getOrderUseCase.execute(id, userId);
   }
 
@@ -55,20 +70,18 @@ export class OrdersController {
   @Get('current')
   async getCurrentOrder(@Headers('X_USER_ID') userId: number) {
     return this.getCurrentOrderUseCase.execute(userId);
-  }  
+  }
 
   @Post(':id/checkout')
-  async checkoutOrder(
-    @Param('id') orderId: number,
-    ) {
+  async checkoutOrder(@Param('id') orderId: number) {
     return this.checkoutOrderUseCase.execute(orderId);
   }
 
   @Post(':id/refund')
   async requestRefund(
     @Param('id') orderId: number,
-    @Headers('X_USER_ID') userId: number
-    ) {
+    @Headers('X_USER_ID') userId: number,
+  ) {
     return this.requestRefundUseCase.execute(orderId, userId);
   }
 
