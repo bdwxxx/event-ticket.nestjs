@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import * as amqp from 'amqplib';
 import { ConfigService } from '@nestjs/config';
 
@@ -9,7 +14,7 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
   protected channel: amqp.Channel | null = null;
 
   constructor(private readonly configService: ConfigService) {}
-  
+
   async onModuleInit() {
     await this.connect();
   }

@@ -38,7 +38,7 @@ import { RabbitMQModule } from './rmq/rmq.module';
   ],
   controllers: [EventsController],
   providers: [
-    EventsService, 
+    EventsService,
     EventsRepositoryService,
     {
       provide: APP_GUARD,
@@ -47,7 +47,7 @@ import { RabbitMQModule } from './rmq/rmq.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    }
+    },
   ],
 })
 export class EventsModule {}
