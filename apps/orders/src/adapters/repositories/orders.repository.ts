@@ -171,4 +171,80 @@ export class OrdersRepository {
 
     return order;
   }
+
+  async findOrdersWithEventTickets(eventId: number): Promise<Order[]> {
+  return this.orderRepository
+    .createQueryBuilder('order')
+    .innerJoin('order.tickets', 'ticket')
+    .where('ticket.event_id = :eventId', { eventId })
+    .getMany();
+}
+
+async removeEventTicketsFromOrder(orderId: number, eventId: number): Promise<void> {
+  await this.ticketRepository
+    .createQueryBuilder()
+    .delete()
+    .where('order_id = :orderId', { orderId })
+    .andWhere('event_id = :eventId', { eventId })
+    .execute();
+}
+
+async refundOrderForEvent(orderId: number, eventId: number): Promise<Order> {
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['tickets'],
+  });
+
+  if (!order) {
+    throw new Error('Order not found');
+  }
+  
+  // Помечаем билеты для этого мероприятия как возвращенные
+  // Если все билеты возвращены, меняем статус заказа на REFUNDED
+  const eventTickets = order.tickets.filter(ticket => ticket.event_id === eventId);
+  
+  // Помечаем эти билеты как возвращенные
+  for (const ticket of eventTickets) {
+    await this.ticketRepository
+      .createQueryBuilder()
+      .update()
+      .set({ refunded: true })
+      .where('id = :id', { id: ticket.id })
+      .execute();
+  }
+  
+  // Если все билеты в заказе возвращены, меняем статус заказа
+  const remainingActiveTickets = order.tickets.filter(
+    ticket => ticket.event_id !== eventId && !ticket.refunded
+  );
+  
+  if (remainingActiveTickets.length === 0) {
+    order.order_status = OrderStatus.REFUNDED;
+    await this.orderRepository.save(order);
+  }
+  
+  const updatedOrder = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['tickets'],
+  });
+
+  if (!updatedOrder) {
+    throw new NotFoundException('Order not found after refunding tickets');
+  }
+
+  return updatedOrder;
+}
+
+async findOneWithTickets(orderId: number): Promise<Order> {
+  const order = await this.orderRepository.findOne({
+    where: { id: orderId },
+    relations: ['tickets'],
+  });
+
+  if (!order) {
+    throw new NotFoundException(`Order with ID ${orderId} not found`);
+  }
+
+  return order;
+}
 }
