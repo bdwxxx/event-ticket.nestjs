@@ -8,13 +8,13 @@ import {
   Param,
   Body,
 } from '@nestjs/common';
-import { EventsService } from './events.service';
-import { GetEventsDto } from './dto/get-events.dto';
-import { Roles } from './guards/roles.decorator';
-import { Role } from './guards/role.enum';
-import { Event } from './db/entities/events.entity';
-import { CreateEventDto } from './dto/create-event.dto';
-import { UpdateEventDto } from './dto/update-event.dto';
+import { EventsService } from '../events.service';
+import { GetEventsDto } from '../dto/get-events.dto';
+import { Roles } from '../guards/roles.decorator';
+import { Role } from '../guards/role.enum';
+import { Event } from '../db/entities/events.entity';
+import { CreateEventDto } from '../dto/create-event.dto';
+import { UpdateEventDto } from '../dto/update-event.dto';
 
 @Controller('events')
 export class EventsController {
