@@ -63,10 +63,7 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
     await this.connect();
   }
 
-  async sendToQueue(
-    queue: string,
-    message: any,
-  ): Promise<void> {
+  async sendToQueue(queue: string, message: any): Promise<void> {
     try {
       if (!this.channel) {
         await this.connect();
@@ -79,23 +76,15 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
 
       // Assert the queue exists
       await this.channel.assertQueue(queue, { durable: true });
-      
+
       // Send message to queue
-      this.channel.sendToQueue(
-        queue,
-        Buffer.from(JSON.stringify(message)),
-        { persistent: true },
-      );
-      
-      this.logger.debug(
-        `Message sent to queue: ${queue}`,
-        message,
-      );
+      this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {
+        persistent: true,
+      });
+
+      this.logger.debug(`Message sent to queue: ${queue}`, message);
     } catch (error) {
-      this.logger.error(
-        `Failed to send message to queue: ${queue}`,
-        error,
-      );
+      this.logger.error(`Failed to send message to queue: ${queue}`, error);
       throw error;
     }
   }
@@ -121,7 +110,7 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
           this.channel?.ack(msg);
         }
       });
-      
+
       this.logger.log(`Consuming messages from queue: ${queue}`);
     } catch (error) {
       this.logger.error(
