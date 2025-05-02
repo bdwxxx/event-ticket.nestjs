@@ -7,17 +7,17 @@ import { RmqService } from '../services/rmq/rmq.service';
 export class CheckoutOrderUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
-    private readonly rmqService: RmqService
+    private readonly rmqService: RmqService,
   ) {}
 
   async execute(orderId: number): Promise<Order> {
     const order = await this.ordersRepository.findOneWithTickets(orderId);
-    
+
     const updatedOrder = await this.ordersRepository.checkout(orderId);
-    
+
     // Публикуем события для каждого билета
     const eventTickets = {};
-    
+
     // Группируем билеты по eventId для подсчета количества
     for (const ticket of order.tickets) {
       if (!eventTickets[ticket.event_id]) {
@@ -25,7 +25,7 @@ export class CheckoutOrderUseCase {
       }
       eventTickets[ticket.event_id]++;
     }
-    
+
     // Публикуем событие для каждого мероприятия
     for (const eventId in eventTickets) {
       await this.rmqService.sendToQueue('order.ticket.purchased', {
@@ -34,7 +34,7 @@ export class CheckoutOrderUseCase {
         quantity: eventTickets[eventId],
       });
     }
-    
+
     return updatedOrder;
   }
 }

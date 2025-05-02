@@ -75,7 +75,9 @@ export class AuthService {
     return { accessToken };
   }
 
-  async webhookCheck(token: string): Promise<{ statusCode: number; role: string; userId: string }> {
+  async webhookCheck(
+    token: string,
+  ): Promise<{ statusCode: number; role: string; userId: string }> {
     try {
       const decodedToken = await this.jwtService.verifyAsync(token, {
         secret: this.configService.getOrThrow<string>('JWT_SECRET'),

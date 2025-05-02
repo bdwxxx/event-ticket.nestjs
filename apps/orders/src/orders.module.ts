@@ -16,6 +16,7 @@ import { CheckoutOrderUseCase } from './usecases/checkout-order.usecase';
 import { RequestRefundUseCase } from './usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from './usecases/remove-ticket.usecase';
 import { RabbitMQModule } from './services/rmq/rmq.module';
+import { OrderMapper } from './domain/order.mapper';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RabbitMQModule } from './services/rmq/rmq.module';
   ],
   controllers: [OrdersController],
   providers: [
+    OrderMapper,
     OrdersRepository,
     CreateOrderUseCase,
     GetOrderUseCase,

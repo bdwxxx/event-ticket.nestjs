@@ -7,7 +7,7 @@ import {
   HttpStatus,
   HttpCode,
   Get,
-  Res
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth/auth.service';
 import { Response } from 'express';
@@ -46,7 +46,7 @@ export class AuthController {
       : authorization;
 
     const result = await this.authService.webhookCheck(token);
-        
+
     response.setHeader('X-USER-ROLE', result.role);
     response.setHeader('X-USER-ID', result.userId);
     response.status(HttpStatus.OK).send();

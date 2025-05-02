@@ -16,18 +16,23 @@ export class OrderEventsHandler {
   }
 
   private subscribeToEventChanges(): void {
-    this.rmqService.consume('event.deleted', this.handleEventDeleted.bind(this));
+    this.rmqService.consume(
+      'event.deleted',
+      this.handleEventDeleted.bind(this),
+    );
   }
 
-  private async handleEventDeleted(msg: amqp.ConsumeMessage | null): Promise<void> {
+  private async handleEventDeleted(
+    msg: amqp.ConsumeMessage | null,
+  ): Promise<void> {
     if (!msg) return;
 
     try {
       const content = JSON.parse(msg.content.toString());
       const eventId = content.id;
-      
+
       this.logger.log(`Received event.deleted for eventId: ${eventId}`);
-      
+
       await this.eventDeletedUseCase.execute(eventId);
     } catch (error) {
       this.logger.error('Error processing event.deleted event', error);

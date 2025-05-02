@@ -66,6 +66,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     labels:
       - traefik.enable=true
       - traefik.http.routers.orders.rule=Host(`localhost`) && PathPrefix(`/orders`)
