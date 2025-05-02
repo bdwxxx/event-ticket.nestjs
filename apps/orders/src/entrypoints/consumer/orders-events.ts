@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RmqService } from '../../services/rmq/rmq.service';
 import { OrdersRepository } from '../../adapters/repositories/orders.repository';
 import * as amqp from 'amqplib';
+import { EventDeletedUseCase } from '../../usecases/event-deleted.usecase';
 
 @Injectable()
 export class OrderEventsHandler {
@@ -9,7 +10,7 @@ export class OrderEventsHandler {
 
   constructor(
     private readonly rmqService: RmqService,
-    private readonly ordersRepository: OrdersRepository,
+    private readonly eventDeletedUseCase: EventDeletedUseCase,
   ) {
     this.subscribeToEventChanges();
   }
@@ -27,20 +28,7 @@ export class OrderEventsHandler {
       
       this.logger.log(`Received event.deleted for eventId: ${eventId}`);
       
-      // найти все заказы с билетами для этого мероприятия
-      const affectedOrders = await this.ordersRepository.findOrdersWithEventTickets(eventId);
-      
-      for (const order of affectedOrders) {
-        if (order.order_status === 'cart') {
-          // удалить билеты из корзины, если заказ еще не оплачен
-          await this.ordersRepository.removeEventTicketsFromOrder(order.id, eventId);
-          this.logger.log(`Removed tickets for event ${eventId} from cart order ${order.id}`);
-        } else if (['paid', 'payment_pending', 'created'].includes(order.order_status)) {
-          // оформить возврат средств, если заказ оплачен
-          await this.ordersRepository.refundOrderForEvent(order.id, eventId);
-          this.logger.log(`Initiated refund for event ${eventId} on order ${order.id}`);
-        }
-      }
+      await this.eventDeletedUseCase.execute(eventId);
     } catch (error) {
       this.logger.error('Error processing event.deleted event', error);
     }
