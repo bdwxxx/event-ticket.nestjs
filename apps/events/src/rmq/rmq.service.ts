@@ -100,6 +100,38 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async consume(
+    queue: string,
+    callback: (msg: amqp.ConsumeMessage | null) => void,
+  ): Promise<void> {
+    try {
+      if (!this.channel) {
+        await this.connect();
+      }
+
+      if (!this.channel) {
+        throw new Error('Failed to establish RabbitMQ channel');
+      }
+
+      await this.channel.assertQueue(queue, { durable: true });
+
+      this.channel.consume(queue, (msg) => {
+        if (msg) {
+          callback(msg);
+          this.channel?.ack(msg);
+        }
+      });
+      
+      this.logger.log(`Consuming messages from queue: ${queue}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to consume messages from queue: ${queue}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   async closeConnection(): Promise<void> {
     try {
       if (this.channel) {
