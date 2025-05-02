@@ -15,6 +15,7 @@ import { GetCurrentOrderUseCase } from './usecases/get-current-order.usecase';
 import { CheckoutOrderUseCase } from './usecases/checkout-order.usecase';
 import { RequestRefundUseCase } from './usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from './usecases/remove-ticket.usecase';
+import { RabbitMQModule } from './services/rmq/rmq.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { RemoveTicketUseCase } from './usecases/remove-ticket.usecase';
       }),
     }),
     TypeOrmModule.forFeature([Ticket, Order]),
+    RabbitMQModule,
   ],
   controllers: [OrdersController],
   providers: [

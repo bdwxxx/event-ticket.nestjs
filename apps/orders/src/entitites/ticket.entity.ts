@@ -23,6 +23,9 @@ export class Ticket {
   @Column()
   order_id: number;
 
+  @Column({ default: false })
+  refunded: boolean;
+
   @ManyToOne(() => Order, (order) => order.tickets)
   @JoinColumn({ name: 'order_id' })
   order: Order;
