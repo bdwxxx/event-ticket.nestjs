@@ -32,23 +32,22 @@ export class RequestRefundUseCase {
     const updatedOrderEntity =
       await this.ordersRepository.requestRefund(orderId);
 
-      const eventTickets = {};
+    const eventTickets = {};
 
-      for (const ticket of orderEntity.tickets) {
-        if (!eventTickets[ticket.event_id]) {
-          eventTickets[ticket.event_id] = 0;
-        }
-        eventTickets[ticket.event_id]++;
+    for (const ticket of orderEntity.tickets) {
+      if (!eventTickets[ticket.event_id]) {
+        eventTickets[ticket.event_id] = 0;
       }
-      for (const eventId in eventTickets) {
-        await this.rmqService.sendToQueue('order.ticket.refunded', {
-          eventId: parseInt(eventId),
-          orderId: order.id,
-          quantity: eventTickets[eventId],
-        });
-      }
+      eventTickets[ticket.event_id]++;
+    }
+    for (const eventId in eventTickets) {
+      await this.rmqService.sendToQueue('order.ticket.refunded', {
+        eventId: parseInt(eventId),
+        orderId: order.id,
+        quantity: eventTickets[eventId],
+      });
+    }
 
     return this.orderMapper.toDomain(updatedOrderEntity);
   }
 }
-
