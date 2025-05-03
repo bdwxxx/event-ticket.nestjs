@@ -47,8 +47,6 @@ export class PaymentsAdapter {
       } catch (error) {
         this.logger.error(`Payment creation failed: ${error.message}`, error.stack);
         return { status: false }; // Default return in case all retries fail
-     
-
       }
     }
   }
