@@ -16,7 +16,7 @@ export class RequestRefundUseCase {
     private readonly rmqService: RmqService,
   ) {}
 
-  async execute(orderId: number, userId: number): Promise<Order> {
+  async execute(orderId: number, userId: string): Promise<Order> {
     const orderEntity = await this.ordersRepository.findOne(orderId, userId);
 
     if (!orderEntity) {

@@ -42,8 +42,9 @@ export class OrdersRepository {
 
     const ticket = await this.ticketRepository.create({
       event_id: eventId,
-      price,
+      price: price,
       order_id: orderId,
+      refunded: false,
     });
 
     await this.ticketRepository.save(ticket);

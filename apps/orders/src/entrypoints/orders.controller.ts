@@ -50,7 +50,7 @@ export class OrdersController {
   @Delete(':id')
   async deleteOrder(
     @Param('id') id: number,
-    @Headers('X_USER_ID') userId: number,
+    @Headers('X_USER_ID') userId: string,
   ) {
     return this.deleteOrderUseCase.execute(id, userId);
   }
@@ -58,18 +58,18 @@ export class OrdersController {
   @Get(':id')
   async getOrder(
     @Param('id') id: number,
-    @Headers('X_USER_ID') userId: number,
+    @Headers('X_USER_ID') userId: string,
   ) {
     return this.getOrderUseCase.execute(id, userId);
   }
 
   @Get()
-  async getAllOrders(@Headers('X_USER_ID') userId: number) {
+  async getAllOrders(@Headers('X_USER_ID') userId: string) {
     return this.getAllOrdersUseCase.execute(userId);
   }
 
   @Get('current')
-  async getCurrentOrder(@Headers('X_USER_ID') userId: number) {
+  async getCurrentOrder(@Headers('X_USER_ID') userId: string) {
     return this.getCurrentOrderUseCase.execute(userId);
   }
 
@@ -81,7 +81,7 @@ export class OrdersController {
   @Post(':id/refund')
   async requestRefund(
     @Param('id') orderId: number,
-    @Headers('X_USER_ID') userId: number,
+    @Headers('X_USER_ID') userId: string,
   ) {
     return this.requestRefundUseCase.execute(orderId, userId);
   }

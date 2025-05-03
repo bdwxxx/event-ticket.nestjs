@@ -28,7 +28,7 @@ import { RabbitMQModule } from './rmq/rmq.module';
         password: configService.get('POSTGRES_PASSWORD'),
         database: configService.get('POSTGRES_DB'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        synchronize: true,
         autoLoadEntities: true,
       }),
     }),
