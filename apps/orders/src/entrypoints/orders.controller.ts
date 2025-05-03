@@ -18,6 +18,7 @@ import { CheckoutOrderUseCase } from '../usecases/checkout-order.usecase';
 import { RequestRefundUseCase } from '../usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from '../usecases/remove-ticket.usecase';
 import { CreatePaymentDto } from 'src/dto/createPayment.dto';
+import { RefundPaymentDto } from 'src/dto/refundPayment.dto';
 
 @Controller('order')
 export class OrdersController {
@@ -82,8 +83,9 @@ export class OrdersController {
   async requestRefund(
     @Param('id') orderId: number,
     @Headers('X-USER-ID') userId: string,
+    @Body() refundPaymentData: RefundPaymentDto,
   ) {
-    return this.requestRefundUseCase.execute(orderId, userId);
+    return this.requestRefundUseCase.execute(orderId, userId, refundPaymentData);
   }
 
   @Delete(':id/ticket/:ticketId')

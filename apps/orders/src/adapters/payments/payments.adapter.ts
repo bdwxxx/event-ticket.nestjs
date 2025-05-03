@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { firstValueFrom } from "rxjs";
 import { CreatePaymentDto } from "src/dto/createPayment.dto";
+import { RefundPaymentDto } from "src/dto/refundPayment.dto";
 
 @Injectable()
 export class PaymentsAdapter {
@@ -40,13 +41,41 @@ export class PaymentsAdapter {
           })
         );
 
-        if (response.status !== 200) {
+        if (response.status !== 201) {
           return { status: false };
         }
         return { status: true };
       } catch (error) {
         this.logger.error(`Payment creation failed: ${error.message}`, error.stack);
-        return { status: false }; // Default return in case all retries fail
+        return { status: false }; 
       }
     }
+
+    async refundPayment(paymentData: RefundPaymentDto): Promise<{ status: boolean }> {
+    try {
+      this.logger.log(`Refunding payment of ${paymentData.amount}`);
+      this.logger.log(`Using API URL: ${this.apiUrl}`);
+
+      const response = await firstValueFrom(
+        this.httpService.post("/refund", {
+          paymentId: paymentData.paymentId,
+          amount: paymentData.amount,
+        }, {
+          baseURL: this.apiUrl,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+      );
+
+      if (response.status !== 201) {
+        return { status: false };
+      }
+
+      return { status: true };
+    } catch (error) {
+      this.logger.error(`Payment refund failed: ${error.message}`, error.stack);
+      return { status: false }; 
+    }
   }
+}
