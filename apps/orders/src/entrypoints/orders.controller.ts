@@ -17,6 +17,7 @@ import { GetCurrentOrderUseCase } from '../usecases/get-current-order.usecase';
 import { CheckoutOrderUseCase } from '../usecases/checkout-order.usecase';
 import { RequestRefundUseCase } from '../usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from '../usecases/remove-ticket.usecase';
+import { CreatePaymentDto } from 'src/dto/createPayment.dto';
 
 @Controller('order')
 export class OrdersController {
@@ -33,7 +34,7 @@ export class OrdersController {
   ) {}
 
   @Post()
-  async createOrder(@Headers('X_USER_ID') userId: number) {
+  async createOrder(@Headers('X-USER-ID') userId: string) {
     return this.createOrderUseCase.execute(userId);
   }
 
@@ -73,8 +74,8 @@ export class OrdersController {
   }
 
   @Post(':id/checkout')
-  async checkoutOrder(@Param('id') orderId: number) {
-    return this.checkoutOrderUseCase.execute(orderId);
+  async checkoutOrder(@Param('id') orderId: number, @Body() paymentData: CreatePaymentDto) {
+    return this.checkoutOrderUseCase.execute(orderId, paymentData);
   }
 
   @Post(':id/refund')
