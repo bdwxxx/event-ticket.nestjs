@@ -27,7 +27,7 @@ export class PaymentsAdapter {
         this.logger.log(`Using API URL: ${this.apiUrl}`);
 
         const response = await firstValueFrom(
-          this.httpService.post("", {
+          this.httpService.post("/payments", {
             amount: paymentDto.amount,
             cardNumber: paymentDto.cardNumber,
             cardholderName: paymentDto.cardholderName,
@@ -37,6 +37,7 @@ export class PaymentsAdapter {
             baseURL: this.apiUrl,
             headers: {
               "Content-Type": "application/json",
+              "Authorization": `Bearer ${this.configService.getOrThrow<string>("PAYMENT_GATEWAY_API_KEY")}`,
             },
           })
         );
