@@ -6,7 +6,7 @@ import { Order } from '../entitites/order.entity';
 export class GetOrderUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
 
-  async execute(orderId: number, userId: number): Promise<Order> {
+  async execute(orderId: number, userId: string): Promise<Order> {
     return this.ordersRepository.findOne(orderId, userId);
   }
 }

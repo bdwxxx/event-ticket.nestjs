@@ -5,7 +5,7 @@ import { OrdersRepository } from '../adapters/repositories/orders.repository';
 export class DeleteOrderUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
 
-  async execute(orderId: number, userId: number): Promise<void> {
+  async execute(orderId: number, userId: string): Promise<void> {
     const orderExists = await this.ordersRepository.findOne(orderId, userId);
 
     if (!orderExists) {
