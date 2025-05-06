@@ -11,7 +11,6 @@ import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { EventsRepositoryService } from './events-repository/events-repositories.service';
 import { RabbitMQModule } from './rmq/rmq.module';
-import { TicketEventsHandler } from './entrypoints/consumer/ticket-events.handler';
 
 @Module({
   imports: [
@@ -29,7 +28,7 @@ import { TicketEventsHandler } from './entrypoints/consumer/ticket-events.handle
         password: configService.get('POSTGRES_PASSWORD'),
         database: configService.get('POSTGRES_DB'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
+        synchronize: configService.get('NODE_ENV') !== 'production',
         autoLoadEntities: true,
       }),
     }),
@@ -49,7 +48,6 @@ import { TicketEventsHandler } from './entrypoints/consumer/ticket-events.handle
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-    TicketEventsHandler,
   ],
 })
 export class EventsModule {}

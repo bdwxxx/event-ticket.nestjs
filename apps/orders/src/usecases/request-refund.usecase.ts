@@ -6,9 +6,7 @@ import {
 } from '../domain/exceptions/order-exceptions';
 import { Order } from '../domain/models/order.models';
 import { OrderMapper } from '../domain/order.mapper';
-import { RmqService } from '../services/rmq/rmq.service';
-import { RefundPaymentDto } from '../dto/refundPayment.dto';
-import { PaymentsAdapter } from '../adapters/payments/payments.adapter';
+import { RmqService } from 'src/services/rmq/rmq.service';
 
 @Injectable()
 export class RequestRefundUseCase {
@@ -16,10 +14,9 @@ export class RequestRefundUseCase {
     private readonly ordersRepository: OrdersRepository,
     private readonly orderMapper: OrderMapper,
     private readonly rmqService: RmqService,
-    private readonly paymentsAdapter: PaymentsAdapter,
   ) {}
 
-  async execute(orderId: number, userId: string, refundPaymentData: RefundPaymentDto): Promise<Order> {
+  async execute(orderId: number, userId: number): Promise<Order> {
     const orderEntity = await this.ordersRepository.findOne(orderId, userId);
 
     if (!orderEntity) {
@@ -30,15 +27,6 @@ export class RequestRefundUseCase {
 
     if (!order.canRequestRefund()) {
       throw new RefundWindowExpiredException();
-    }
-
-    const paymentRequest = await this.paymentsAdapter.refundPayment({
-      paymentId: refundPaymentData.paymentId,
-      amount: refundPaymentData.amount,
-    })
-
-    if (!paymentRequest.status === false) {
-      throw new Error('Payment refund failed');
     }
 
     const updatedOrderEntity =

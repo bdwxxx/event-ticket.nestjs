@@ -17,8 +17,6 @@ import { RequestRefundUseCase } from './usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from './usecases/remove-ticket.usecase';
 import { RabbitMQModule } from './services/rmq/rmq.module';
 import { OrderMapper } from './domain/order.mapper';
-import { HttpModule } from '@nestjs/axios';
-import { PaymentsAdapter } from './adapters/payments/payments.adapter';
 
 @Module({
   imports: [
@@ -40,7 +38,6 @@ import { PaymentsAdapter } from './adapters/payments/payments.adapter';
     }),
     TypeOrmModule.forFeature([Ticket, Order]),
     RabbitMQModule,
-    HttpModule,
   ],
   controllers: [OrdersController],
   providers: [
@@ -55,7 +52,6 @@ import { PaymentsAdapter } from './adapters/payments/payments.adapter';
     CheckoutOrderUseCase,
     RequestRefundUseCase,
     RemoveTicketUseCase,
-    PaymentsAdapter,
   ],
 })
 export class OrdersModule {}

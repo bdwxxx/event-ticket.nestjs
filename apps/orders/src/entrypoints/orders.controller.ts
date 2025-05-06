@@ -17,8 +17,6 @@ import { GetCurrentOrderUseCase } from '../usecases/get-current-order.usecase';
 import { CheckoutOrderUseCase } from '../usecases/checkout-order.usecase';
 import { RequestRefundUseCase } from '../usecases/request-refund.usecase';
 import { RemoveTicketUseCase } from '../usecases/remove-ticket.usecase';
-import { CreatePaymentDto } from 'src/dto/createPayment.dto';
-import { RefundPaymentDto } from 'src/dto/refundPayment.dto';
 
 @Controller('order')
 export class OrdersController {
@@ -35,7 +33,7 @@ export class OrdersController {
   ) {}
 
   @Post()
-  async createOrder(@Headers('X-USER-ID') userId: string) {
+  async createOrder(@Headers('X_USER_ID') userId: number) {
     return this.createOrderUseCase.execute(userId);
   }
 
@@ -51,7 +49,7 @@ export class OrdersController {
   @Delete(':id')
   async deleteOrder(
     @Param('id') id: number,
-    @Headers('X-USER-ID') userId: string,
+    @Headers('X_USER_ID') userId: number,
   ) {
     return this.deleteOrderUseCase.execute(id, userId);
   }
@@ -59,33 +57,32 @@ export class OrdersController {
   @Get(':id')
   async getOrder(
     @Param('id') id: number,
-    @Headers('X-USER-ID') userId: string,
+    @Headers('X_USER_ID') userId: number,
   ) {
     return this.getOrderUseCase.execute(id, userId);
   }
 
   @Get()
-  async getAllOrders(@Headers('X-USER-ID') userId: string) {
+  async getAllOrders(@Headers('X_USER_ID') userId: number) {
     return this.getAllOrdersUseCase.execute(userId);
   }
 
   @Get('current')
-  async getCurrentOrder(@Headers('X-USER-ID') userId: string) {
+  async getCurrentOrder(@Headers('X_USER_ID') userId: number) {
     return this.getCurrentOrderUseCase.execute(userId);
   }
 
   @Post(':id/checkout')
-  async checkoutOrder(@Param('id') orderId: number, @Body() paymentData: CreatePaymentDto) {
-    return this.checkoutOrderUseCase.execute(orderId, paymentData);
+  async checkoutOrder(@Param('id') orderId: number) {
+    return this.checkoutOrderUseCase.execute(orderId);
   }
 
   @Post(':id/refund')
   async requestRefund(
     @Param('id') orderId: number,
-    @Headers('X-USER-ID') userId: string,
-    @Body() refundPaymentData: RefundPaymentDto,
+    @Headers('X_USER_ID') userId: number,
   ) {
-    return this.requestRefundUseCase.execute(orderId, userId, refundPaymentData);
+    return this.requestRefundUseCase.execute(orderId, userId);
   }
 
   @Delete(':id/ticket/:ticketId')

@@ -17,7 +17,7 @@ export class OrdersRepository {
     private readonly ticketRepository: Repository<Ticket>,
   ) {}
 
-  async create(userId: string): Promise<Order> {
+  async create(userId: number): Promise<Order> {
     const order = this.orderRepository.create({
       user_id: userId,
       order_status: OrderStatus.CART,
@@ -42,9 +42,8 @@ export class OrdersRepository {
 
     const ticket = await this.ticketRepository.create({
       event_id: eventId,
-      price: price,
+      price,
       order_id: orderId,
-      refunded: false,
     });
 
     await this.ticketRepository.save(ticket);
@@ -96,7 +95,7 @@ export class OrdersRepository {
     return updatedOrder;
   }
 
-  async delete(orderId: number, userId: string): Promise<void> {
+  async delete(orderId: number, userId: number): Promise<void> {
     const order = await this.orderRepository.findOne({
       where: { id: orderId, user_id: userId },
     });
@@ -136,7 +135,7 @@ export class OrdersRepository {
     return this.orderRepository.save(order);
   }
 
-  async findOne(id: number, userId: string): Promise<Order> {
+  async findOne(id: number, userId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id, user_id: userId },
       relations: ['tickets'],
@@ -149,7 +148,7 @@ export class OrdersRepository {
     return order;
   }
 
-  async findAll(userId: string): Promise<Order[]> {
+  async findAll(userId: number): Promise<Order[]> {
     const orders = await this.orderRepository.find({
       where: { user_id: userId },
       relations: ['tickets'],
@@ -160,7 +159,7 @@ export class OrdersRepository {
     return orders;
   }
 
-  async findCurrentCart(userId: string): Promise<Order> {
+  async findCurrentCart(userId: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { user_id: userId, order_status: 'cart' },
       relations: ['tickets'],
@@ -253,14 +252,4 @@ export class OrdersRepository {
 
     return order;
   }
-
-  async calculateOrderTotal(orderId: number): Promise<number> {
-  const order = await this.findOneWithTickets(orderId);
-  
-  if (!order || !order.tickets || order.tickets.length === 0) {
-    return 0;
-  }
-  
-  return order.tickets.reduce((sum, ticket) => sum + ticket.price, 0);
-}
 }
