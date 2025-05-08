@@ -17,31 +17,35 @@ export class CheckoutOrderUseCase {
     private readonly paymentTracking: PaymentTrackingService,
   ) {}
 
-async execute(orderId: number, paymentData: CreatePaymentDto): Promise<Order> {
-  const order = await this.ordersRepository.findOneWithTickets(orderId);
-  const totalAmount = await this.ordersRepository.calculateOrderTotal(orderId);
+  async execute(
+    orderId: number,
+    paymentData: CreatePaymentDto,
+  ): Promise<Order> {
+    const order = await this.ordersRepository.findOneWithTickets(orderId);
+    const totalAmount =
+      await this.ordersRepository.calculateOrderTotal(orderId);
 
-  const paymentResponse = await this.paymentAdapter.createPayment({
-    amount: totalAmount,
-    cardNumber: paymentData.cardNumber,
-    cardholderName: paymentData.cardholderName,
-    expiryDate: paymentData.expiryDate,
-    cvv: paymentData.cvv,
-  });
+    const paymentResponse = await this.paymentAdapter.createPayment({
+      amount: totalAmount,
+      cardNumber: paymentData.cardNumber,
+      cardholderName: paymentData.cardholderName,
+      expiryDate: paymentData.expiryDate,
+      cvv: paymentData.cvv,
+    });
 
-  if (paymentResponse.status !== true) {
-    throw new Error('Payment failed');
-  }
+    if (paymentResponse.status !== true) {
+      throw new Error('Payment failed');
+    }
 
-  // Получаем merchantId и paymentId из ответа
-  const paymentId = paymentResponse.paymentId as string;
-  this.logger.log(`Payment ${paymentId} created, waiting for confirmation`);
+    // Получаем merchantId и paymentId из ответа
+    const paymentId = paymentResponse.paymentId as string;
+    this.logger.log(`Payment ${paymentId} created, waiting for confirmation`);
 
     try {
       // Ожидаем подтверждения платежа через новый сервис
       await this.paymentTracking.trackPayment(paymentId);
       this.logger.log(`Payment ${paymentId} confirmed successfully`);
-      
+
       // После подтверждения платежа обновляем статус заказа
       const updatedOrder = await this.ordersRepository.checkout(orderId);
 
@@ -76,8 +80,10 @@ async execute(orderId: number, paymentData: CreatePaymentDto): Promise<Order> {
         orderId: order.id,
         quantity: eventTickets[eventId],
       });
-      
-      this.logger.debug(`Published ticket purchase event for eventId=${eventId}, quantity=${eventTickets[eventId]}`);
+
+      this.logger.debug(
+        `Published ticket purchase event for eventId=${eventId}, quantity=${eventTickets[eventId]}`,
+      );
     }
   }
 }

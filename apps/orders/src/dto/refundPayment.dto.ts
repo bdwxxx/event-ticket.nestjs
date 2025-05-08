@@ -1,9 +1,9 @@
-import { IsNumber, IsString } from "class-validator";
+import { IsNumber, IsString } from 'class-validator';
 
 export class RefundPaymentDto {
-    @IsString()
-    paymentId: string;
+  @IsString()
+  paymentId: string;
 
-    @IsNumber()
-    amount: number;
+  @IsNumber()
+  amount: number;
 }

@@ -75,7 +75,10 @@ export class OrdersController {
   }
 
   @Post(':id/checkout')
-  async checkoutOrder(@Param('id') orderId: number, @Body() paymentData: CreatePaymentDto) {
+  async checkoutOrder(
+    @Param('id') orderId: number,
+    @Body() paymentData: CreatePaymentDto,
+  ) {
     return this.checkoutOrderUseCase.execute(orderId, paymentData);
   }
 
@@ -85,7 +88,11 @@ export class OrdersController {
     @Headers('X-USER-ID') userId: string,
     @Body() refundPaymentData: RefundPaymentDto,
   ) {
-    return this.requestRefundUseCase.execute(orderId, userId, refundPaymentData);
+    return this.requestRefundUseCase.execute(
+      orderId,
+      userId,
+      refundPaymentData,
+    );
   }
 
   @Delete(':id/ticket/:ticketId')

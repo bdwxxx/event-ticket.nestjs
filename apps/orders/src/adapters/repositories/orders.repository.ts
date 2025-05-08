@@ -255,12 +255,12 @@ export class OrdersRepository {
   }
 
   async calculateOrderTotal(orderId: number): Promise<number> {
-  const order = await this.findOneWithTickets(orderId);
-  
-  if (!order || !order.tickets || order.tickets.length === 0) {
-    return 0;
+    const order = await this.findOneWithTickets(orderId);
+
+    if (!order || !order.tickets || order.tickets.length === 0) {
+      return 0;
+    }
+
+    return order.tickets.reduce((sum, ticket) => sum + ticket.price, 0);
   }
-  
-  return order.tickets.reduce((sum, ticket) => sum + ticket.price, 0);
-}
 }

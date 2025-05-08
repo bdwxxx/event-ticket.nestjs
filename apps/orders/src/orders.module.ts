@@ -61,7 +61,7 @@ import { PaymentTrackingService } from './services/payment-tracking/payment-trac
     PaymentsAdapter,
     JwtPaymentAdapter,
     wsPaymentsAdapter,
-    PaymentTrackingService
+    PaymentTrackingService,
   ],
 })
 export class OrdersModule {}
