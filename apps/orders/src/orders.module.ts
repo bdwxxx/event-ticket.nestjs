@@ -19,6 +19,8 @@ import { RabbitMQModule } from './services/rmq/rmq.module';
 import { OrderMapper } from './domain/order.mapper';
 import { HttpModule } from '@nestjs/axios';
 import { PaymentsAdapter } from './adapters/payments/payments.adapter';
+import { JwtPaymentAdapter } from './adapters/payments/facades/jwtPayment.facades';
+import { wsPaymentsAdapter } from './adapters/payments/ws/wsPayments.adapter';
 
 @Module({
   imports: [
@@ -56,6 +58,8 @@ import { PaymentsAdapter } from './adapters/payments/payments.adapter';
     RequestRefundUseCase,
     RemoveTicketUseCase,
     PaymentsAdapter,
+    JwtPaymentAdapter,
+    wsPaymentsAdapter
   ],
 })
 export class OrdersModule {}

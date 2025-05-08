@@ -1,18 +1,21 @@
 import { HttpService } from "@nestjs/axios";
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { firstValueFrom } from "rxjs";
 import { CreatePaymentDto } from "src/dto/createPayment.dto";
 import { RefundPaymentDto } from "src/dto/refundPayment.dto";
+import { JwtPaymentAdapter } from "./facades/jwtPayment.facades";
 
 @Injectable()
-export class PaymentsAdapter {
+export class PaymentsAdapter implements OnModuleInit {
   private readonly logger = new Logger(PaymentsAdapter.name);
   private readonly apiUrl: string;
+  private jwtToken: string;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly jwtPaymentAdapter: JwtPaymentAdapter,
   ) {
     this.apiUrl = this.configService.getOrThrow<string>("PAYMENT_GATEWAY_URL") || "";
     if (!this.apiUrl) {
@@ -21,10 +24,21 @@ export class PaymentsAdapter {
     }
   }
 
-  async createPayment(paymentDto: CreatePaymentDto): Promise<{ status: boolean }> {
+  async onModuleInit(): Promise<void> {
+    try {
+      this.jwtToken = await this.jwtPaymentAdapter.ensureValidToken();
+    } catch (error) {
+      this.logger.error(`Error during module initialization: ${error.message}`);
+      throw error; 
+    }
+  }
+
+  async createPayment(paymentDto: CreatePaymentDto): Promise<{ status: boolean, paymentId?: string }> {
       try {
         this.logger.log(`Creating payment of ${paymentDto.amount}`);
         this.logger.log(`Using API URL: ${this.apiUrl}`);
+
+        this.jwtToken = await this.jwtPaymentAdapter.ensureValidToken();
 
         const response = await firstValueFrom(
           this.httpService.post("/payments", {
@@ -37,7 +51,7 @@ export class PaymentsAdapter {
             baseURL: this.apiUrl,
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${this.configService.getOrThrow<string>("PAYMENT_GATEWAY_API_KEY")}`,
+              "Authorization": `Bearer ${this.jwtToken}`,
             },
           })
         );
@@ -45,7 +59,7 @@ export class PaymentsAdapter {
         if (response.status !== 201) {
           return { status: false };
         }
-        return { status: true };
+        return { status: true, paymentId: response.data.id };
       } catch (error) {
         this.logger.error(`Payment creation failed: ${error.message}`, error.stack);
         return { status: false }; 
@@ -65,6 +79,7 @@ export class PaymentsAdapter {
           baseURL: this.apiUrl,
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.jwtToken}`,
           },
         })
       );
