@@ -21,6 +21,7 @@ import { HttpModule } from '@nestjs/axios';
 import { PaymentsAdapter } from './adapters/payments/payments.adapter';
 import { JwtPaymentAdapter } from './adapters/payments/facades/jwtPayment.facades';
 import { wsPaymentsAdapter } from './adapters/payments/ws/wsPayments.adapter';
+import { PaymentTrackingService } from './services/payment-tracking/payment-tracking.service';
 
 @Module({
   imports: [
@@ -59,7 +60,8 @@ import { wsPaymentsAdapter } from './adapters/payments/ws/wsPayments.adapter';
     RemoveTicketUseCase,
     PaymentsAdapter,
     JwtPaymentAdapter,
-    wsPaymentsAdapter
+    wsPaymentsAdapter,
+    PaymentTrackingService
   ],
 })
 export class OrdersModule {}
