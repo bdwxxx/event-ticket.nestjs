@@ -36,7 +36,7 @@ export class Order {
   order_status: string;
 
   @Column()
-  user_id: number;
+  user_id: string;
 
   @CreateDateColumn()
   created_at: Date;

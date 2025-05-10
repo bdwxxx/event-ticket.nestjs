@@ -9,7 +9,7 @@ export class Ticket {
 
 export class Order {
   id: number;
-  user_id: number;
+  user_id: string;
   order_status: string;
   created_at: Date;
   tickets: Ticket[];

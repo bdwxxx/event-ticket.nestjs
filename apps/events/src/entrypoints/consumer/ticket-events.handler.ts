@@ -11,6 +11,7 @@ export class TicketEventsHandler {
     private readonly rmqService: RmqService,
     private readonly eventsRepository: EventsRepositoryService,
   ) {
+    this.logger.log('TicketEventsHandler initialized');
     this.subscribeToOrderChanges();
   }
 

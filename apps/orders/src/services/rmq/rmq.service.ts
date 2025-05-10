@@ -7,10 +7,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
 
-
-  // This is a workaround to get the correct type for amqp.Connection and amqp.Channel 
-  type AmqpConnection = ReturnType<typeof amqp.connect> extends Promise<infer T> ? T : never;
-  type AmqpChannel = ReturnType<AmqpConnection['createChannel']> extends Promise<infer T> ? T : never;
+// This is a workaround to get the correct type for amqp.Connection and amqp.Channel
+type AmqpConnection =
+  ReturnType<typeof amqp.connect> extends Promise<infer T> ? T : never;
+type AmqpChannel =
+  ReturnType<AmqpConnection['createChannel']> extends Promise<infer T>
+    ? T
+    : never;
 
 @Injectable()
 export class RmqService implements OnModuleInit, OnModuleDestroy {
@@ -67,7 +70,7 @@ export class RmqService implements OnModuleInit, OnModuleDestroy {
     await this.closeConnection();
     await new Promise((resolve) => setTimeout(resolve, 5000));
     await this.connect();
-}
+  }
 
   async sendToQueue(queue: string, message: any): Promise<void> {
     if (!this.channel) {
