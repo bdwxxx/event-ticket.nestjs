@@ -4,7 +4,6 @@ import { Order } from '../entitites/order.entity';
 import { RmqService } from '../services/rmq/rmq.service';
 import { CreatePaymentDto } from '../dto/createPayment.dto';
 import { PaymentsAdapter } from '../adapters/payments/payments.adapter';
-import { PaymentTrackingService } from 'src/services/payment-tracking/payment-tracking.service';
 import { Logger } from '@nestjs/common';
 
 @Injectable()
@@ -14,7 +13,6 @@ export class CheckoutOrderUseCase {
     private readonly ordersRepository: OrdersRepository,
     private readonly rmqService: RmqService,
     private readonly paymentAdapter: PaymentsAdapter,
-    private readonly paymentTracking: PaymentTrackingService,
   ) {}
 
   async execute(
@@ -37,26 +35,12 @@ export class CheckoutOrderUseCase {
       throw new Error('Payment failed');
     }
 
-    // Получаем merchantId и paymentId из ответа
-    const paymentId = paymentResponse.paymentId as string;
-    this.logger.log(`Payment ${paymentId} created, waiting for confirmation`);
+    const updatedOrder = await this.ordersRepository.checkout(orderId);
 
-    // Ожидаем подтверждения платежа через новый сервис
-    await this.paymentTracking.trackPayment(paymentId);
-    this.logger.log(`Payment ${paymentId} confirmed successfully`);
+    // Отправляем уведомления о покупке билетов
+    await this.publishTicketPurchaseEvents(order);
 
-    try {
-      // После подтверждения платежа обновляем статус заказа
-      const updatedOrder = await this.ordersRepository.checkout(orderId);
-
-      // Отправляем уведомления о покупке билетов
-      await this.publishTicketPurchaseEvents(order);
-
-      return updatedOrder;
-    } catch (error) {
-      this.logger.error(`Payment confirmation failed: ${error.message}`);
-      throw new Error(`Order checkout failed: ${error.message}`);
-    }
+    return updatedOrder;
   }
 
   /**
