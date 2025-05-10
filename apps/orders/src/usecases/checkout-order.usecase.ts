@@ -41,11 +41,11 @@ export class CheckoutOrderUseCase {
     const paymentId = paymentResponse.paymentId as string;
     this.logger.log(`Payment ${paymentId} created, waiting for confirmation`);
 
-    try {
-      // Ожидаем подтверждения платежа через новый сервис
-      await this.paymentTracking.trackPayment(paymentId);
-      this.logger.log(`Payment ${paymentId} confirmed successfully`);
+    // Ожидаем подтверждения платежа через новый сервис
+    await this.paymentTracking.trackPayment(paymentId);
+    this.logger.log(`Payment ${paymentId} confirmed successfully`);
 
+    try {
       // После подтверждения платежа обновляем статус заказа
       const updatedOrder = await this.ordersRepository.checkout(orderId);
 

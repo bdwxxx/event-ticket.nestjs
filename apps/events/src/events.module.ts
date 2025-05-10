@@ -29,7 +29,7 @@ import { TicketEventsHandler } from './entrypoints/consumer/ticket-events.handle
         password: configService.get('POSTGRES_PASSWORD'),
         database: configService.get('POSTGRES_DB'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
+        synchronize: configService.get('NODE_ENV') !== 'production',
         autoLoadEntities: true,
       }),
     }),
