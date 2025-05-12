@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { OrdersRepository } from '../adapters/repositories/orders.repository';
 import {
   OrderNotFoundException,
@@ -41,8 +41,8 @@ export class RequestRefundUseCase {
       amount: refundPaymentData.amount,
     });
 
-    if (!paymentRequest.status === false) {
-      throw new Error('Payment refund failed');
+    if (paymentRequest.status === false) {
+      throw new HttpException('Payment refund failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     const updatedOrderEntity =
