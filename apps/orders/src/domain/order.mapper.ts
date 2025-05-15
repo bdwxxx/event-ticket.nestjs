@@ -27,15 +27,40 @@ export class OrderMapper {
 
   toEntity(order: Order): OrderEntity {
     const entity = new OrderEntity();
-    entity.id = order.id;
+
+    if (order.id !== undefined) {
+      entity.id = order.id;
+    }
+
+    if (order.user_id === undefined) {
+      throw new Error(
+        'Order user_id cannot be undefined when mapping to entity',
+      );
+    }
     entity.user_id = order.user_id;
+
+    if (order.order_status === undefined) {
+      throw new Error(
+        'Order order_status cannot be undefined when mapping to entity',
+      );
+    }
     entity.order_status = order.order_status;
+
     entity.created_at = order.created_at;
     entity.tickets = order.tickets
       ? order.tickets.map((ticket) => {
           const ticketEntity = new TicketEntity();
           ticketEntity.id = ticket.id;
-          ticketEntity.order = entity;
+          ticketEntity.order = entity; 
+          if (ticket.event_id !== undefined) {
+            ticketEntity.event_id = ticket.event_id;
+          }
+          if (ticket.price !== undefined) {
+            ticketEntity.price = ticket.price;
+          }
+          if (ticket.refunded !== undefined) {
+            ticketEntity.refunded = ticket.refunded;
+          }
           return ticketEntity;
         })
       : [];
