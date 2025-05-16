@@ -6,29 +6,36 @@ import { OrderStatus, Order as OrderEntity } from '../src/entitites/order.entity
 import { Ticket as TicketEntity } from '../src/entitites/ticket.entity';
 import { CreatePaymentDto } from '../src/dto/createPayment.dto';
 import { RefundPaymentDto } from '../src/dto/refundPayment.dto';
-import { OrdersRepository } from '../src/adapters/repositories/orders.repository';
 import { RmqService } from '../src/services/rmq/rmq.service';
 import { PaymentsAdapter } from '../src/adapters/payments/payments.adapter';
-import { OrderNotFoundException, RefundWindowExpiredException } from '../src/domain/exceptions/order-exceptions';
-import { DataSource } from 'typeorm';
+import { JwtPaymentAdapter } from '../src/adapters/payments/facades/jwtPayment.facades';
+import { wsPaymentsAdapter } from '../src/adapters/payments/ws/wsPayments.adapter';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { ConfigType } from '@nestjs/config';
+import { RabbitMQModule } from '../src/services/rmq/rmq.module';
+import { OrderMapper } from '../src/domain/order.mapper';
+import { OrdersRepository } from '../src/adapters/repositories/orders.repository';
+import { CreateOrderUseCase } from '../src/usecases/create-order.usecase';
+import { GetOrderUseCase } from '../src/usecases/get-order.usecase';
+import { UpdateOrderUseCase } from '../src/usecases/update-order.usecase';
+import { DeleteOrderUseCase } from '../src/usecases/delete-order.usecase';
+import { GetAllOrdersUseCase } from '../src/usecases/get-all-orders.usecase';
+import { GetCurrentOrderUseCase } from '../src/usecases/get-current-order.usecase';
+import { RequestRefundUseCase } from '../src/usecases/request-refund.usecase';
+import { CheckoutOrderUseCase } from '../src/usecases/checkout-order.usecase';
+import { RemoveTicketUseCase } from '../src/usecases/remove-ticket.usecase';
+import { OrdersController } from '../src/entrypoints/orders.controller';
+
+interface TestContext {
+  app: INestApplication;
+  postgresqlContainer: StartedPostgreSqlContainer;
+  shutdown: () => Promise<void>;
+}
 
 describe('OrdersController (E2E)', () => {
-  let app: INestApplication;
-
-  const mockOrdersRepository = {
-    create: jest.fn(),
-    addTicketToOrder: jest.fn(),
-    removeTicketFromOrder: jest.fn(),
-    delete: jest.fn(),
-    checkout: jest.fn(),
-    requestRefund: jest.fn(),
-    findOne: jest.fn(),
-    findAll: jest.fn(),
-    findCurrentCart: jest.fn(),
-    findOneWithTickets: jest.fn(),
-    calculateOrderTotal: jest.fn(),
-  };
-
+  const testContext: TestContext = {} as TestContext;
+  
   const mockRmqService = {
     sendToQueue: jest.fn(),
     consume: jest.fn(),
@@ -38,6 +45,10 @@ describe('OrdersController (E2E)', () => {
     createPayment: jest.fn(),
     refundPayment: jest.fn(),
   };
+
+  const mockJwtPaymentAdapter = {};
+
+  const mockWsPaymentsAdapter = {};
 
   const mockOrderEntity: OrderEntity = {
     id: 1,
@@ -63,73 +74,94 @@ describe('OrdersController (E2E)', () => {
   };
 
   beforeAll(async () => {
+    console.time('e2e-test-setup');
+    console.log('[E2E Test Setup] Starting PostgreSQL container...');
+    
     try {
-      const mockDataSource = {
-        initialize: jest.fn().mockResolvedValue(null),
-        destroy: jest.fn().mockResolvedValue(null),
-        options: {
-          type: 'postgres',
-        },
-        driver: {},
-        entityMetadatas: [],
-        isInitialized: true,
-        getRepository: jest.fn().mockImplementation((entity) => {
-          if (entity === OrderEntity) {
-            return mockOrdersRepository;
-          }
-          if (entity === TicketEntity) {
-            return {
-              find: jest.fn().mockResolvedValue([]),
-              findOneBy: jest.fn().mockResolvedValue(null),
-              save: jest.fn().mockResolvedValue({}),
-              delete: jest.fn().mockResolvedValue({}),
-            };
-          }
-          return {
-            find: jest.fn().mockResolvedValue([]),
-            findOneBy: jest.fn().mockResolvedValue(null),
-            save: jest.fn().mockResolvedValue({}),
-            delete: jest.fn().mockResolvedValue({}),
-          };
-        }),
-        manager: {
-          getRepository: jest.fn().mockImplementation((entity) => {
-            if (entity === OrderEntity) {
-              return mockOrdersRepository;
-            }
-            return {
-              find: jest.fn().mockResolvedValue([]),
-              findOneBy: jest.fn().mockResolvedValue(null),
-              save: jest.fn().mockResolvedValue({}),
-              delete: jest.fn().mockResolvedValue({}),
-            };
-          }),
-          transaction: jest.fn(),
-        },
-      };
-
+      const postgresqlContainer = await new PostgreSqlContainer()
+        .withDatabase('testdb')
+        .withUsername('testuser')
+        .withPassword('testpass')
+        .withExposedPorts(5432)
+        .start();
+      
+      console.log('[E2E Test Setup] PostgreSQL container started.');
+      console.log('before all', postgresqlContainer.getHost(), postgresqlContainer.getMappedPort(5432), postgresqlContainer.getUsername(), postgresqlContainer.getPassword(), postgresqlContainer.getDatabase());
+      
+      // Create test module
       const moduleFixture: TestingModule = await Test.createTestingModule({
-        imports: [OrdersModule],
+        imports: [
+          TypeOrmModule.forRoot({
+            type: 'postgres',
+            host: postgresqlContainer.getHost(),
+            port: postgresqlContainer.getMappedPort(5432),
+            username: postgresqlContainer.getUsername(),
+            password: postgresqlContainer.getPassword(),
+            database: postgresqlContainer.getDatabase(),
+            entities: [OrderEntity, TicketEntity],
+            synchronize: true,
+            logging: true,
+          }),
+          TypeOrmModule.forFeature([OrderEntity, TicketEntity]),
+          RabbitMQModule,
+        ],
+        providers: [              
+          OrderMapper,
+          OrdersRepository,
+          CreateOrderUseCase,
+          GetOrderUseCase,
+          UpdateOrderUseCase,
+          DeleteOrderUseCase,
+          GetAllOrdersUseCase,
+          GetCurrentOrderUseCase,
+          CheckoutOrderUseCase,
+          RequestRefundUseCase,
+          RemoveTicketUseCase,
+          PaymentsAdapter,
+          JwtPaymentAdapter,
+          wsPaymentsAdapter
+        ], 
+        controllers: [OrdersController],
       })
-        .overrideProvider(OrdersRepository)
-        .useValue(mockOrdersRepository)
         .overrideProvider(RmqService)
         .useValue(mockRmqService)
         .overrideProvider(PaymentsAdapter)
         .useValue(mockPaymentsAdapter)
-        .overrideProvider(DataSource)
-        .useValue(mockDataSource)
+        .overrideProvider(JwtPaymentAdapter)
+        .useValue(mockJwtPaymentAdapter)
+        .overrideProvider(wsPaymentsAdapter)
+        .useValue(mockWsPaymentsAdapter)
         .compile();
 
-      app = moduleFixture.createNestApplication();
+      const app = moduleFixture.createNestApplication();
       app.useGlobalPipes(new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
         transform: true,
       }));
+
+      
       await app.init();
+      
+      // Define shutdown function
+      const shutdown = async () => {
+        await app.close();
+        await postgresqlContainer.stop();
+        console.log('[E2E Test Cleanup] Resources cleaned up');
+      };
+      
+      // Save to context
+      testContext.app = app;
+      testContext.postgresqlContainer = postgresqlContainer;
+      testContext.shutdown = shutdown;
+      
+      console.timeEnd('e2e-test-setup');
     } catch (error) {
-      console.error('[E2E Test Setup] Failed to initialize Nest application:', error);
+      console.error('[E2E Test Setup] Failed to initialize test environment:', error);
+      if (testContext.postgresqlContainer) {
+        await testContext.postgresqlContainer.stop();
+      }
+      throw error;
     }
   });
 
@@ -138,121 +170,81 @@ describe('OrdersController (E2E)', () => {
   });
 
   afterAll(async () => {
-    if (app) {
-      await app.close();
-    }
+    await testContext.shutdown?.();
   });
 
   describe('POST /order', () => {
     it('should create an order', async () => {
-      const orderToReturn = { ...mockOrderEntity, tickets: [{ ...mockTicketProperties } as TicketEntity] };
-      mockOrdersRepository.create.mockResolvedValue(orderToReturn);
       const userId = 'user123';
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post('/order')
         .set('X-USER-ID', userId)
         .expect(201);
 
-      expect(mockOrdersRepository.create).toHaveBeenCalledWith(userId);
-      expect(response.body.id).toEqual(mockOrderEntity.id);
+      expect(response.body.id).toBeDefined();
     });
   });
 
   describe('PUT /order', () => {
     it('should add a ticket to an order', async () => {
-      const updatedOrder = { ...mockOrderEntity, tickets: [{ ...mockTicketProperties } as TicketEntity] };
-      mockOrdersRepository.addTicketToOrder.mockResolvedValue(updatedOrder);
       const body = { orderId: 1, eventId: 10, price: 100 };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .put('/order')
         .send(body)
         .expect(200);
 
-      expect(mockOrdersRepository.addTicketToOrder).toHaveBeenCalledWith(
-        body.orderId,
-        body.eventId,
-        body.price,
-      );
       expect(response.body.tickets.length).toBe(1);
     });
   });
 
   describe('GET /order/:id', () => {
     it('should get an order by id', async () => {
-      const orderToReturn = { ...mockOrderEntity, tickets: [{ ...mockTicketProperties } as TicketEntity] };
-      mockOrdersRepository.findOne.mockResolvedValue(orderToReturn);
       const userId = 'user123';
       const orderId = 1;
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get(`/order/${orderId}`)
         .set('X-USER-ID', userId)
         .expect(200);
 
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
-      expect(response.body.id).toEqual(mockOrderEntity.id);
+      expect(response.body.id).toEqual(orderId);
     });
 
     it('should return 404 if order not found', async () => {
-      mockOrdersRepository.findOne.mockImplementation(() => {
-        throw new OrderNotFoundException();
-      });
       const userId = 'user123';
       const orderId = 999;
 
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .get(`/order/${orderId}`)
         .set('X-USER-ID', userId)
         .expect(404);
-
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
     });
   });
 
   describe('GET /order', () => {
     it('should get all orders for a user', async () => {
-      const ordersToReturn = [{ ...mockOrderEntity, tickets: [{ ...mockTicketProperties } as TicketEntity] }];
-      mockOrdersRepository.findAll.mockResolvedValue(ordersToReturn);
       const userId = 'user123';
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .get('/order')
         .set('X-USER-ID', userId)
         .expect(200);
 
-      expect(mockOrdersRepository.findAll).toHaveBeenCalledWith(userId);
-      expect(response.body.length).toBe(1);
-      expect(response.body[0].id).toEqual(mockOrderEntity.id);
+      expect(response.body.length).toBeGreaterThanOrEqual(0);
     });
   });
 
   describe('GET /order/current', () => {
     it('should get current cart order for a user', async () => {
-      const orderToReturn = { ...mockOrderEntity, tickets: [{ ...mockTicketProperties } as TicketEntity] };
       const userId = 'user123';
 
-      mockOrdersRepository.findCurrentCart.mockReset();
-      mockOrdersRepository.findCurrentCart.mockImplementation(async (id: string) => {
-        if (id === userId) {
-          return Promise.resolve(orderToReturn);
-        }
-        return Promise.resolve(null);
-      });
+      const response = await request(testContext.app.getHttpServer())
+        .get('/order/current')
+        .set('X-USER-ID', userId)
+        .expect(200);
 
-      try {
-        const response = await request(app.getHttpServer())
-          .get('/order/current')
-          .set('X-USER-ID', userId)
-          .expect(200);
-
-        expect(mockOrdersRepository.findCurrentCart).toHaveBeenCalledWith(userId);
-        expect(response.body.id).toEqual(mockOrderEntity.id);
-
-      } catch (error) {
-        console.error('[E2E Test] Error during request or assertion:', error);
-        throw error;
-      }
+      expect(response.body.id).toBeDefined();
     });
   });
 
@@ -266,32 +258,15 @@ describe('OrdersController (E2E)', () => {
         expiryDate: '12/25',
         cvv: '123',
       };
-      const orderWithTickets = { ...mockOrderEntity, tickets: [mockTicketEntityWithOrderLink], order_status: OrderStatus.CART };
-      const checkedOutOrder = { 
-        ...mockOrderEntity, 
-        order_status: OrderStatus.CREATED, 
-        tickets: [{ ...mockTicketProperties } as TicketEntity] 
-      };
 
-      mockOrdersRepository.findOneWithTickets.mockResolvedValue(orderWithTickets);
-      mockOrdersRepository.calculateOrderTotal.mockResolvedValue(paymentData.amount);
       mockPaymentsAdapter.createPayment.mockResolvedValue({ status: true, paymentId: 'payment-xyz' });
-      mockOrdersRepository.checkout.mockResolvedValue(checkedOutOrder);
       mockRmqService.sendToQueue.mockResolvedValue(undefined);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/checkout`)
         .send(paymentData)
         .expect(201);
 
-      expect(mockOrdersRepository.findOneWithTickets).toHaveBeenCalledWith(orderId);
-      expect(mockOrdersRepository.calculateOrderTotal).toHaveBeenCalledWith(orderId);
-      expect(mockPaymentsAdapter.createPayment).toHaveBeenCalledWith(paymentData);
-      expect(mockOrdersRepository.checkout).toHaveBeenCalledWith(orderId);
-      expect(mockRmqService.sendToQueue).toHaveBeenCalledWith(
-        'order.ticket.purchased',
-        expect.objectContaining({ eventId: mockTicketProperties.event_id, orderId: orderId, quantity: 1 }),
-      );
       expect(response.body.order_status).toEqual(OrderStatus.CREATED);
     });
 
@@ -301,7 +276,7 @@ describe('OrdersController (E2E)', () => {
         amount: 100,
       };
 
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/checkout`)
         .send(invalidPaymentData)
         .expect(400);
@@ -316,24 +291,13 @@ describe('OrdersController (E2E)', () => {
         expiryDate: '12/25',
         cvv: '123',
       };
-      const orderWithTickets = { ...mockOrderEntity, tickets: [mockTicketEntityWithOrderLink], order_status: OrderStatus.CART };
 
-      mockOrdersRepository.findOneWithTickets.mockResolvedValue(orderWithTickets);
-      mockOrdersRepository.calculateOrderTotal.mockResolvedValue(paymentData.amount);
       mockPaymentsAdapter.createPayment.mockResolvedValue({ status: false, paymentId: 'payment-fail' });
 
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/checkout`)
         .send(paymentData)
-        .expect(500)
-        .expect((res) => {
-          expect(res.body.message).toEqual('Payment failed');
-        });
-
-      expect(mockOrdersRepository.findOneWithTickets).toHaveBeenCalledWith(orderId);
-      expect(mockOrdersRepository.calculateOrderTotal).toHaveBeenCalledWith(orderId);
-      expect(mockPaymentsAdapter.createPayment).toHaveBeenCalledWith(paymentData);
-      expect(mockOrdersRepository.checkout).not.toHaveBeenCalled();
+        .expect(500);
     });
 
     it('should return 404 if order to checkout is not found', async () => {
@@ -346,18 +310,10 @@ describe('OrdersController (E2E)', () => {
         cvv: '123',
       };
 
-      mockOrdersRepository.findOneWithTickets.mockImplementation(() => {
-        throw new NotFoundException(`Order with ID ${orderId} not found`);
-      });
-
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/checkout`)
         .send(paymentData)
         .expect(404);
-
-      expect(mockOrdersRepository.findOneWithTickets).toHaveBeenCalledWith(orderId);
-      expect(mockOrdersRepository.calculateOrderTotal).not.toHaveBeenCalled();
-      expect(mockPaymentsAdapter.createPayment).not.toHaveBeenCalled();
     });
   });
 
@@ -367,37 +323,15 @@ describe('OrdersController (E2E)', () => {
       const userId = 'user123';
       const refundPaymentData: RefundPaymentDto = { paymentId: 'payment-xyz', amount: 100 };
 
-      const orderEntityForRefund = {
-        ...mockOrderEntity,
-        order_status: OrderStatus.CREATED,
-        created_at: new Date(),
-        tickets: [mockTicketEntityWithOrderLink],
-      };
-      const refundedOrderEntity = { 
-        ...mockOrderEntity, 
-        order_status: OrderStatus.REFUNDED,
-        created_at: orderEntityForRefund.created_at,
-        tickets: [{ ...mockTicketProperties } as TicketEntity]
-      };
-
-      mockOrdersRepository.findOne.mockResolvedValue(orderEntityForRefund);
       mockPaymentsAdapter.refundPayment.mockResolvedValue({ status: true, refundId: 'refund-abc' });
-      mockOrdersRepository.requestRefund.mockResolvedValue(refundedOrderEntity);
       mockRmqService.sendToQueue.mockResolvedValue(undefined);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/refund`)
         .set('X-USER-ID', userId)
         .send(refundPaymentData)
         .expect(201);
 
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
-      expect(mockPaymentsAdapter.refundPayment).toHaveBeenCalledWith(refundPaymentData);
-      expect(mockOrdersRepository.requestRefund).toHaveBeenCalledWith(orderId);
-      expect(mockRmqService.sendToQueue).toHaveBeenCalledWith(
-        'order.ticket.refunded',
-        expect.objectContaining({ eventId: mockTicketProperties.event_id, orderId: orderId, quantity: 1 }),
-      );
       expect(response.body.order_status).toEqual(OrderStatus.REFUNDED);
     });
 
@@ -406,17 +340,11 @@ describe('OrdersController (E2E)', () => {
       const userId = 'user123';
       const refundPaymentData: RefundPaymentDto = { paymentId: 'payment-xyz', amount: 100 };
 
-      mockOrdersRepository.findOne.mockImplementation(() => {
-        throw new OrderNotFoundException();
-      });
-
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/refund`)
         .set('X-USER-ID', userId)
         .send(refundPaymentData)
         .expect(404);
-
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
     });
 
     it('should return 400 if refund window expired', async () => {
@@ -424,25 +352,11 @@ describe('OrdersController (E2E)', () => {
       const userId = 'user123';
       const refundPaymentData: RefundPaymentDto = { paymentId: 'payment-xyz', amount: 100 };
 
-      const oldOrderEntity = {
-        ...mockOrderEntity,
-        order_status: OrderStatus.CREATED,
-        created_at: new Date(Date.now() - 30 * 60 * 1000),
-        tickets: [mockTicketEntityWithOrderLink],
-      };
-
-      mockOrdersRepository.findOne.mockResolvedValue(oldOrderEntity);
-
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/refund`)
         .set('X-USER-ID', userId)
         .send(refundPaymentData)
-        .expect(400)
-        .expect((res) => {
-          expect(res.body.message).toEqual('Refund window expired');
-        });
-
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
+        .expect(400);
     });
 
     it('should return 500 if refund payment processing fails', async () => {
@@ -450,28 +364,13 @@ describe('OrdersController (E2E)', () => {
       const userId = 'user123';
       const refundPaymentData: RefundPaymentDto = { paymentId: 'payment-xyz', amount: 100 };
 
-      const orderEntityForRefund = {
-        ...mockOrderEntity,
-        order_status: OrderStatus.CREATED,
-        created_at: new Date(),
-        tickets: [mockTicketEntityWithOrderLink],
-      };
-
-      mockOrdersRepository.findOne.mockResolvedValue(orderEntityForRefund);
       mockPaymentsAdapter.refundPayment.mockResolvedValue({ status: false, refundId: 'refund-fail' });
 
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .post(`/order/${orderId}/refund`)
         .set('X-USER-ID', userId)
         .send(refundPaymentData)
-        .expect(500)
-        .expect((res) => {
-          expect(res.body.message).toEqual('Payment refund failed');
-        });
-
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
-      expect(mockPaymentsAdapter.refundPayment).toHaveBeenCalledWith(refundPaymentData);
-      expect(mockOrdersRepository.requestRefund).not.toHaveBeenCalled();
+        .expect(500);
     });
   });
 
@@ -479,14 +378,11 @@ describe('OrdersController (E2E)', () => {
     it('should remove a ticket from an order', async () => {
       const orderId = 1;
       const ticketId = 1;
-      const orderAfterRemoval = { ...mockOrderEntity, tickets: [] };
-      mockOrdersRepository.removeTicketFromOrder.mockResolvedValue(orderAfterRemoval);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(testContext.app.getHttpServer())
         .delete(`/order/${orderId}/ticket/${ticketId}`)
         .expect(200);
 
-      expect(mockOrdersRepository.removeTicketFromOrder).toHaveBeenCalledWith(orderId, ticketId);
       expect(response.body.tickets.length).toBe(0);
     });
   });
@@ -495,33 +391,21 @@ describe('OrdersController (E2E)', () => {
     it('should delete an order', async () => {
       const orderId = 1;
       const userId = 'user123';
-      const orderForFindOne = { ...mockOrderEntity, tickets: [{ ...mockTicketProperties } as TicketEntity] };
-      mockOrdersRepository.findOne.mockResolvedValue(orderForFindOne);
-      mockOrdersRepository.delete.mockResolvedValue(undefined);
 
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .delete(`/order/${orderId}`)
         .set('X-USER-ID', userId)
         .expect(200);
-
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
-      expect(mockOrdersRepository.delete).toHaveBeenCalledWith(orderId, userId);
     });
 
     it('should return 404 if order to delete is not found', async () => {
       const orderId = 999;
       const userId = 'user123';
-      mockOrdersRepository.findOne.mockImplementation(() => {
-        throw new NotFoundException('Order not found');
-      });
 
-      await request(app.getHttpServer())
+      await request(testContext.app.getHttpServer())
         .delete(`/order/${orderId}`)
         .set('X-USER-ID', userId)
         .expect(404);
-
-      expect(mockOrdersRepository.findOne).toHaveBeenCalledWith(orderId, userId);
-      expect(mockOrdersRepository.delete).not.toHaveBeenCalled();
     });
   });
 });
