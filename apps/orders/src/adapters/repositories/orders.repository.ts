@@ -162,14 +162,13 @@ export class OrdersRepository {
 
   async findCurrentCart(userId: string): Promise<Order> {
     const order = await this.orderRepository.findOne({
-      where: { user_id: userId, order_status: 'cart' },
+      where: { user_id: userId, order_status: OrderStatus.CART },
       relations: ['tickets'],
     });
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
-
     return order;
   }
 

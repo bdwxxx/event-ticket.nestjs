@@ -4,7 +4,7 @@ import { Order } from '../entitites/order.entity';
 import { RmqService } from '../services/rmq/rmq.service';
 import { CreatePaymentDto } from '../dto/createPayment.dto';
 import { PaymentsAdapter } from '../adapters/payments/payments.adapter';
-import { Logger } from '@nestjs/common';
+import { Logger, HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
 export class CheckoutOrderUseCase {
@@ -32,7 +32,7 @@ export class CheckoutOrderUseCase {
     });
 
     if (paymentResponse.status !== true) {
-      throw new Error('Payment failed');
+      throw new HttpException('Payment failed', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     const updatedOrder = await this.ordersRepository.checkout(orderId);

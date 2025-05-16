@@ -48,12 +48,9 @@ export class OrdersController {
     return this.updateOrderUseCase.execute(orderId, eventId, price);
   }
 
-  @Delete(':id')
-  async deleteOrder(
-    @Param('id') id: number,
-    @Headers('X-USER-ID') userId: string,
-  ) {
-    return this.deleteOrderUseCase.execute(id, userId);
+  @Get('current')
+  async getCurrentOrder(@Headers('X-USER-ID') userId: string) {
+    return this.getCurrentOrderUseCase.execute(userId);
   }
 
   @Get(':id')
@@ -69,9 +66,12 @@ export class OrdersController {
     return this.getAllOrdersUseCase.execute(userId);
   }
 
-  @Get('current')
-  async getCurrentOrder(@Headers('X-USER-ID') userId: string) {
-    return this.getCurrentOrderUseCase.execute(userId);
+  @Delete(':id')
+  async deleteOrder(
+    @Param('id') id: number,
+    @Headers('X-USER-ID') userId: string,
+  ) {
+    return this.deleteOrderUseCase.execute(id, userId);
   }
 
   @Post(':id/checkout')
